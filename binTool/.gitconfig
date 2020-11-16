@@ -1,0 +1,15 @@
+[user]
+	name = nani
+	email = renjie.0501@163.com
+[color]
+	ui = auto
+[core]
+	editor = vim
+	quotepath = false
+[alias]
+    co = checkout
+    ci = commit
+    br = branch
+    st = status
+[oh-my-zsh]
+	hide-status = 1
