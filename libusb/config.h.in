@@ -1,0 +1,6 @@
+
+// the configured options and settings for Tutorial
+#define PRIMER_VERSION_MAJOR @PRIMER_VERSION_MAJOR@
+#define VERSION_MINOR @PRIMER_VERSION_MINOR@
+
+#cmakedefine BUILD_DEBUG_TYPE

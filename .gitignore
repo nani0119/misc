@@ -2,3 +2,7 @@
 proto/build/
 proto/.vscode
 proto/gen/cpp
+
+#libusb
+libusb/build/
+libusb/.vscode/*
