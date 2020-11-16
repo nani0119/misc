@@ -1,0 +1,4 @@
+#proto
+proto/build/
+proto/.vscode
+proto/gen/cpp
