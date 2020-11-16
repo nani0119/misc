@@ -1,0 +1,54 @@
+<launch>
+    <arg name="topic_enable" default="0" />
+    <arg name="service_enable" default="0" />
+    <arg name="topic_service_client_enable" default="0" />
+    <arg name="action_enable" default="0" />
+    <arg name="dynamic_tutorails_enable" default="0" />
+    <arg name="learning_tf2_enable" default="0" />
+    <arg name="robot_description_enable" default="1" />
+
+    <group if="$(arg topic_enable)">
+        <include file="$(find topic_example)/launch/topic_example.launch" ns="topicExample" >
+            <arg name="enable_talker" default="1" />
+            <arg name="enable_listener" default="1" />
+        </include>
+        <include file="$(find topic_external)/launch/topic_external.launch" >
+            <arg name="enable_arg" default="0" />
+            <arg name="namespace_arg" default="topicExample" />
+        </include>
+    </group>
+
+    <group if="$(arg service_enable)">
+        <include file="$(find service_example)/launch/service_example.launch" ns="serviceExample">
+            <arg name="enable_server" default="1" />
+            <arg name="enable_client" default="0" />
+        </include>
+        <include file="$(find service_external)/launch/service_external.launch" >
+            <arg name="enable_arg" default="0" />
+            <arg name="namespace_arg" default="serviceExample" />
+        </include>
+    </group>
+
+    <group if="$(arg topic_service_client_enable)">
+         <include file="$(find topic_service_client)/launch/topic_service_client.launch" ns="serviceExample"/>
+    </group>
+
+    <group if="$(arg action_enable)">
+        <include file="$(find action_example)/launch/action_example.launch" ns="actionExample">
+        <arg name="enable_server" default="1" />
+        <arg name="enable_client" default="1" />
+        </include>
+    </group>
+
+    <group if="$(arg dynamic_tutorails_enable)">
+        <include file="$(find dynamic_tutorials)/launch/dynamic_tutorials.launch"  ns="dynamic_reconfig_tutorials"/>
+    </group>
+
+    <group if="$(arg learning_tf2_enable)">
+        <include file="$(find learning_tf2)/launch/learning_tf2.launch"  ns="learning_tf2"/>
+    </group>
+
+    <group if="$(arg robot_description_enable)">
+        <include file="$(find myrobot_description)/launch/myrobot.launch"  ns="myrobot"/>
+    </group>
+</launch>

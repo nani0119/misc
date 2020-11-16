@@ -1,0 +1,6 @@
+<launch>
+    <group>
+        <node name="dynamic_tutorials" pkg="dynamic_tutorials" type="dynamic_tutorials_node" output="screen" />
+        <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+    </group>
+</launch>

@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mytank">
+    <material name="blue">
+        <color rgba="0.0 0.0 0.8 1.0"/>
+    </material>
+    <material name="white">
+        <color rgba="1.0 1.0 1.0 1.0"/>
+    </material>
+    <material name="red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+    </material>
+
+    <material name="green">
+        <color rgba="0.0 0.8 0.0 1.0"/>
+    </material>
+    <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+    </material>
+
+    <xacro:property name="width" value="0.35"/>
+    <xacro:property name="length" value="0.70"/>
+    <xacro:property name="height" value="0.25"/>
+    <xacro:property name="PI" value="3.14159" />
+
+    <xacro:macro name="sphere_link" params="name radius color *origin">
+    <link name="${name}">
+        <visual>
+            <geometry>
+                <sphere radius="${radius}"/>
+            </geometry>
+            <xacro:insert_block name="origin"/>
+            <material name="${color}" />
+        </visual>
+    </link>
+    </xacro:macro>
+
+    <xacro:macro name="cylinder_link" params="name radius length color *origin">
+        <link name="${name}">
+            <visual>
+                <geometry>
+                  <cylinder radius="${radius}" length="${length}"/>
+                </geometry>
+                <xacro:insert_block name="origin"/>
+                <material name="${color}" />
+            </visual>
+        </link> 
+    </xacro:macro>
+
+    <xacro:macro name="box_link" params="name length width height color *origin">
+        <link name="${name}">
+            <visual>
+                <geometry>
+                  <box size="${length} ${width} ${height}" />
+                </geometry>
+                <xacro:insert_block name="origin"/>
+                <material name="${color}" />
+            </visual>
+        </link> 
+    </xacro:macro>
+
+    <xacro:macro name="tank_joint" params="name type parent child *joint_origin *joint_axis *joint_limit">
+        <joint name="${name}" type="${type}">
+            <parent link="${parent}"/>
+            <child link="${child}"/>
+            <xacro:insert_block name="joint_origin" />
+            <xacro:insert_block name="joint_axis" />
+            <xacro:insert_block name="joint_limit" />
+        </joint>
+    </xacro:macro>
+    
+    <!--  model  begin-->
+    <!--body-->    
+    <xacro:box_link name="tank_body" length="${length}" width="${width}" height="${height}" color="blue" >
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </xacro:box_link>
+    
+    <!--head-->
+    <xacro:sphere_link name="tank_head" radius="${height/2}" color="white" >
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    </xacro:sphere_link>
+    <xacro:tank_joint name="body2head" type="continuous" parent="tank_body" child="tank_head">
+        <origin xyz="0.0 0.0 ${height/2}" rpy="0.0 0.0 0.0"/>
+        <axis xyz="0.0 0.0 1.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="0.0"/>>
+    </xacro:tank_joint>
+    
+    <!-- barrel-->
+    <xacro:cylinder_link name="tank_barrel" radius="${height/50}" length="${length/2}" color="green" >
+        <origin xyz="0.0 0.0 ${length/2/2}" rpy="0.0 0.0 0.0"/>
+    </xacro:cylinder_link>
+    <xacro:tank_joint name="head2barrel" type="revolute" parent="tank_head" child="tank_barrel">
+        <origin xyz="${sin(PI/4)*(height/2)} 0.0 ${sin(PI/4)*(height/2)}" rpy="0.0 ${PI/4} 0.0"/>
+        <axis xyz="0.0 1.0 0.0"/>
+        <limit lower="0" upper="${PI/4}" effort="0.0" velocity="12.0"/>
+    </xacro:tank_joint>
+
+    <!--right wheel-->
+    <xacro:cylinder_link name="tank_right_front_wheel" radius="${height/2}" length="${width/5}" color="black" >
+        <origin xyz="0.0 ${width/5/2} 0.0" rpy="${PI/2} 0.0 0.0"/>
+    </xacro:cylinder_link>
+    <xacro:tank_joint name="body_2_rf_wheel" type="continuous" parent="tank_body" child="tank_right_front_wheel">
+        <origin xyz="${length/4} ${-(width/2)} ${-(height/4)}" rpy="0.0 0.0 0.0"/>
+        <axis xyz="0.0 1.0 0.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="12.0"/>
+    </xacro:tank_joint>
+
+    <xacro:cylinder_link name="tank_right_back_wheel" radius="${height/2}" length="${width/5}" color="black" >
+        <origin xyz="0.0 ${width/5/2} 0.0" rpy="${PI/2} 0.0 0.0"/>
+    </xacro:cylinder_link>
+    <xacro:tank_joint name="body_2_rb_wheel" type="continuous" parent="tank_body" child="tank_right_back_wheel">
+        <origin xyz="${-(length/4)} ${-(width/2)} ${-(height/4)}" rpy="0.0 0.0 0.0"/>
+        <axis xyz="0.0 1.0 0.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="12.0"/>
+    </xacro:tank_joint>
+
+    <!--left wheel-->
+    <xacro:cylinder_link name="tank_left_front_wheel" radius="${height/2}" length="${width/5}" color="black" >
+        <origin xyz="0.0 ${-(width/5/2)} 0.0" rpy="${PI/2} 0.0 0.0"/>
+    </xacro:cylinder_link>
+    <xacro:tank_joint name="body_2_lf_wheel" type="continuous" parent="tank_body" child="tank_left_front_wheel">
+        <origin xyz="${length/4} ${width/2} ${-(height/4)}" rpy="0.0 0.0 0.0"/>
+        <axis xyz="0.0 1.0 0.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="12.0"/>
+    </xacro:tank_joint>
+
+    <xacro:cylinder_link name="tank_left_back_wheel" radius="${height/2}" length="${width/5}" color="black" >
+        <origin xyz="0.0 ${-(width/5/2)} 0.0" rpy="${PI/2} 0.0 0.0"/>
+    </xacro:cylinder_link>
+    <xacro:tank_joint name="body_2_lb_wheel" type="continuous" parent="tank_body" child="tank_left_back_wheel">
+        <origin xyz="${-(length/4)} ${width/2} ${-(height/4)}" rpy="0.0 0.0 0.0"/>
+        <axis xyz="0.0 1.0 0.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="12.0"/>
+    </xacro:tank_joint>
+</robot>

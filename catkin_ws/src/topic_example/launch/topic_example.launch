@@ -1,0 +1,10 @@
+<launch>
+    <arg name="enable_talker"/>
+    <arg name="enable_listener"/>
+    <group if="$(arg enable_talker)">
+        <node name = "talker" pkg = "topic_example" type = "talker" output = "screen" />
+    </group>
+    <group if="$(arg enable_listener)">
+        <node name = "listener" pkg = "topic_example" type = "listener" output = "screen" />
+    </group>
+</launch>

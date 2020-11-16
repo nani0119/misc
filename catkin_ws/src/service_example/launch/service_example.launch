@@ -1,0 +1,14 @@
+<launch>
+    <arg name="enable_server" />
+    <arg name="enable_client" />
+    <group if="$(arg enable_server)">
+        <node name="server" pkg="service_example" type="add_two_ints_server" output="screen" />
+    </group>
+    <group if="$(arg enable_client)">
+        <node name="client" pkg="service_example" type="add_two_ints_client" args="1 3" output="screen">
+            <param name="a" type="string" value="2"/>
+            <param name="b" type="string" value="5"/>
+            <param name="rate" type="int" value="1" />
+        </node>
+    </group>
+</launch>

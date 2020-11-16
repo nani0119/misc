@@ -1,0 +1,9 @@
+<launch>
+    <arg name="enable_arg"/>
+    <arg name="namespace_arg"/>
+    <group if="$(arg enable_arg)" ns="$(arg namespace_arg)">
+        <node name="external_listener" pkg="topic_external" type="topic_external_listener" output="screen">
+            <remap from="demo/chatter" to="chatter" />
+        </node>
+    </group>
+</launch>

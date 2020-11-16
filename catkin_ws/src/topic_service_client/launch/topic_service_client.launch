@@ -1,0 +1,7 @@
+<launch>
+    <group>
+        <node name="topic_service_client" pkg="topic_service_client" type="topic_service_client_node" output="screen">
+        <remap from="chatter" to="/topicExample/chatter" />
+        </node>
+    </group>
+</launch>

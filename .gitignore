@@ -1,8 +1,13 @@
 #proto
 proto/build/
-proto/.vscode
-proto/gen/cpp
+proto/.vscode/
+proto/gen/cpp/
 
 #libusb
 libusb/build/
-libusb/.vscode/*
+libusb/.vscode/
+
+#cakin_ws
+catkin_ws/build/
+catkin_ws/devel/
+catkin_ws/.vscode/

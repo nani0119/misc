@@ -1,0 +1,6 @@
+<launch>
+      <param name="robot_description" command="xacro $(find myrobot_description)/urdf/myrobot.xacro" />
+      <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+      <node name="state_publisher" pkg="myrobot_description" type="state_publisher" />
+      <node name="rviz" pkg="rviz" type="rviz" /> 
+</launch>

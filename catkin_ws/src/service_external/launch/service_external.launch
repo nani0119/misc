@@ -1,0 +1,7 @@
+<launch>
+    <arg name="enable_arg" />
+    <arg name="namespace_arg" />
+    <group if= "$(arg enable_arg)"  ns="$(arg namespace_arg)">
+        <node name="service_external_client" pkg="service_external" type="add_two_ints_external_client" output="screen" />
+    </group>
+</launch>
