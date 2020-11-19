@@ -1,0 +1,28 @@
+syntax = "proto3";
+package Calculation;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message Num
+{
+   repeated int32 num = 1;
+}
+
+message Addend {
+    int32 add1 = 1;
+    int32 add2 = 2;
+    google.protobuf.Timestamp last_updated = 3;
+};
+
+message Sum {
+    int32 num = 1;
+    google.protobuf.Timestamp last_updated = 2;
+};
+
+service CalculateService {
+    rpc addTwoInts(Addend) returns (Sum);
+    rpc addTotal(stream Num) returns (Sum);
+    rpc getRamdomTotal(google.protobuf.Empty) returns (stream Num);
+    rpc exchangeRamdomTotal(stream Num) returns (stream Num);
+};

@@ -11,3 +11,7 @@ libusb/.vscode/
 catkin_ws/build/
 catkin_ws/devel/
 catkin_ws/.vscode/
+
+#grpc example
+grpc_example/build/
+grpc_example/.vscode/
