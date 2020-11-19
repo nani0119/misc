@@ -8,7 +8,7 @@ int main(int argc, char const *argv[])
     CalculateClient client(grpc::CreateChannel(target, grpc::InsecureChannelCredentials()));
     int sum = client.addTwoInts(1,2);
     std::cout << "addTwoInts result:" << sum << std::endl;
-
+#if 0
     v.resize(10);
     std::fill_n(v.begin(), 10, 1);
     sum = client.addTotal(v, 10);
@@ -19,5 +19,6 @@ int main(int argc, char const *argv[])
 
     sum = client.exchangeRamdomTotal();
     std::cout << "exchangeRamdomTotal result:" << sum << std::endl;
+#endif
     return 0;
 }

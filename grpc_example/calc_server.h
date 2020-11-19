@@ -5,6 +5,9 @@
 #include <memory>
 #include <string>
 #include <random>
+#include <ctime>
+#include <ratio>
+#include <chrono>
 
 #include <grpcpp/grpcpp.h>
 
@@ -15,6 +18,19 @@ class CalculateServiceImpl:public Calculation::CalculateService::Service
 {
     grpc::Status addTwoInts(::grpc::ServerContext* context, const ::Calculation::Addend* request, ::Calculation::Sum* response) override
     {
+        const std::multimap< grpc::string_ref, grpc::string_ref > clientMetaData = context->client_metadata();
+        std::cout << "peer():" << context->peer() << std::endl;
+     
+        std::cout << "deadline():" << context->deadline().time_since_epoch().count() << std::endl;
+        std::cout << "client meta:" << std::endl;
+        for(auto it = clientMetaData.begin(); it != clientMetaData.end(); ++it)
+        {
+            std::cout<<'\t'<< it->first << " = " << it->second << std::endl;
+        }
+
+        context->AddInitialMetadata("custom-server-metadata", "initial metadata value");
+        context->AddTrailingMetadata("custom-trailing-metadata", "trailing metadata value");
+        
         response->set_num(request->add1() + request->add2());
         return  grpc::Status::OK;
     }
@@ -23,6 +39,7 @@ class CalculateServiceImpl:public Calculation::CalculateService::Service
     {
         Calculation::Num num;
         int result = 0;
+
         while(reader->Read(&num))
         {
             auto n = num.num();
