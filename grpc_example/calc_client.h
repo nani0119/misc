@@ -12,6 +12,7 @@
 
 #include <grpcpp/grpcpp.h>
 
+
 #include "calc_add.pb.h"
 #include "calc_add.grpc.pb.h"
 
@@ -42,6 +43,7 @@ public:
     {
         delete ccb;
     }
+
     int addTwoInts(int a, int b)
     {
         grpc::ClientContext context;
@@ -89,7 +91,7 @@ public:
         }
         else
         {
-            std::cout << "calc error: " <<status.error_code() << std::endl;
+            std::cout << "calc error: " << status.error_code() << ":" << status.error_message() << std::endl;
             return 0;
         }
         

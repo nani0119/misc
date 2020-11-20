@@ -1,10 +1,26 @@
-#include "calc_client.h"
 #include <algorithm>
+#include "calc_client.h"
+#include "health_check_client.h"
+
 
 int main(int argc, char const *argv[])
 {
     std::vector<int> v;
     std::string target = "127.0.0.1:50051";
+    std::cout <<"grpc version:"<< grpc::Version() << std::endl;
+    HealthCheck healthCheck(grpc::CreateChannel(target, grpc::InsecureChannelCredentials()));
+
+    if(healthCheck.check("calcSyncService"))
+    {
+        std::cout << "calcSyncService is serving" << std::endl;
+    }
+    else
+    {
+        std::cout << "calcSyncService is not serving" << std::endl;
+        return 0;
+    }
+    
+
     CalculateClient client(grpc::CreateChannel(target, grpc::InsecureChannelCredentials()));
     int sum = client.addTwoInts(1,2);
     std::cout << "addTwoInts result:" << sum << std::endl;
