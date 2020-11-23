@@ -26,3 +26,7 @@ service CalculateService {
     rpc getRamdomTotal(google.protobuf.Empty) returns (stream Num);
     rpc exchangeRamdomTotal(stream Num) returns (stream Num);
 };
+
+service CalculateAsyncService {
+    rpc getPlusOne(Num) returns (Num);
+};

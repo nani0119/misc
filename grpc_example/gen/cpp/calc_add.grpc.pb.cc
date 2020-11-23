@@ -186,5 +186,66 @@ CalculateService::Service::~Service() {
 }
 
 
+static const char* CalculateAsyncService_method_names[] = {
+  "/Calculation.CalculateAsyncService/getPlusOne",
+};
+
+std::unique_ptr< CalculateAsyncService::Stub> CalculateAsyncService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
+  (void)options;
+  std::unique_ptr< CalculateAsyncService::Stub> stub(new CalculateAsyncService::Stub(channel));
+  return stub;
+}
+
+CalculateAsyncService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
+  : channel_(channel), rpcmethod_getPlusOne_(CalculateAsyncService_method_names[0], ::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  {}
+
+::grpc::Status CalculateAsyncService::Stub::getPlusOne(::grpc::ClientContext* context, const ::Calculation::Num& request, ::Calculation::Num* response) {
+  return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_getPlusOne_, context, request, response);
+}
+
+void CalculateAsyncService::Stub::experimental_async::getPlusOne(::grpc::ClientContext* context, const ::Calculation::Num* request, ::Calculation::Num* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall(stub_->channel_.get(), stub_->rpcmethod_getPlusOne_, context, request, response, std::move(f));
+}
+
+void CalculateAsyncService::Stub::experimental_async::getPlusOne(::grpc::ClientContext* context, const ::Calculation::Num* request, ::Calculation::Num* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create(stub_->channel_.get(), stub_->rpcmethod_getPlusOne_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::Calculation::Num>* CalculateAsyncService::Stub::PrepareAsyncgetPlusOneRaw(::grpc::ClientContext* context, const ::Calculation::Num& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderFactory< ::Calculation::Num>::Create(channel_.get(), cq, rpcmethod_getPlusOne_, context, request, false);
+}
+
+::grpc::ClientAsyncResponseReader< ::Calculation::Num>* CalculateAsyncService::Stub::AsyncgetPlusOneRaw(::grpc::ClientContext* context, const ::Calculation::Num& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncgetPlusOneRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+CalculateAsyncService::Service::Service() {
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      CalculateAsyncService_method_names[0],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< CalculateAsyncService::Service, ::Calculation::Num, ::Calculation::Num>(
+          [](CalculateAsyncService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::Calculation::Num* req,
+             ::Calculation::Num* resp) {
+               return service->getPlusOne(ctx, req, resp);
+             }, this)));
+}
+
+CalculateAsyncService::Service::~Service() {
+}
+
+::grpc::Status CalculateAsyncService::Service::getPlusOne(::grpc::ServerContext* context, const ::Calculation::Num* request, ::Calculation::Num* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+
 }  // namespace Calculation
 

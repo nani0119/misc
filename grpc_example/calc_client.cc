@@ -36,5 +36,10 @@ int main(int argc, char const *argv[])
     sum = client.exchangeRamdomTotal();
     std::cout << "exchangeRamdomTotal result:" << sum << std::endl;
 #endif
+    CalculateAsyncClient asyncClient(grpc::CreateChannel(target, grpc::InsecureChannelCredentials()));
+    asyncClient.getPlusOne(1);
+    std::thread t{&CalculateAsyncClient::asyncCompleteRpc, &asyncClient};
+    t.join();
+
     return 0;
 }

@@ -33,6 +33,7 @@ private:
         }
     };
     ContextCallback* ccb;
+
 public:
     CalculateClient(std::shared_ptr<grpc::Channel> channel):stub_(Calculation::CalculateService::NewStub(channel)), ccb(new ContextCallback)
     {
@@ -208,6 +209,69 @@ public:
         }
         
     }
+
+
+
+    
+
+};
+
+
+class CalculateAsyncClient
+{
+public:
+    CalculateAsyncClient(std::shared_ptr<grpc::Channel> channel):stub_(Calculation::CalculateAsyncService::NewStub(channel))
+    {
+
+    }
+
+    ~CalculateAsyncClient()
+    {
+
+    }
+
+    void getPlusOne(int num)
+    {
+        grpc::ClientContext context;
+        Calculation::Num calcNum;
+        calcNum.add_num(num);
+
+        AsyncClientCall* call = new AsyncClientCall;
+        call->response_reader = stub_->PrepareAsyncgetPlusOne(&call->context, calcNum, &cq_);
+        call->response_reader->StartCall();
+        call->response_reader->Finish(&call->response, &call->status, (void*)call);
+    }
+
+    void asyncCompleteRpc()
+    {
+        void* got_tag;
+        bool ok = false;
+        // Block until the next result is available in the completion queue "cq".
+        cq_.Next(&got_tag, &ok);
+        {
+            // The tag in this example is the memory location of the call object
+            AsyncClientCall* call = static_cast<AsyncClientCall*>(got_tag);
+
+            if (call->status.ok())
+                std::cout << "I get the result:" << call->response.num(0) << std::endl;
+            else
+                std::cout <<__func__ <<":RPC failed" << std::endl;
+
+            // Once we're complete, deallocate the call object.
+            delete call;
+        }
+    }
+private:
+    std::unique_ptr<Calculation::CalculateAsyncService::Stub> stub_;
+    grpc::CompletionQueue cq_;
+    struct AsyncClientCall
+    {
+        Calculation::Num response;
+        grpc::ClientContext context;
+        grpc::Status status;
+        std::unique_ptr<grpc::ClientAsyncResponseReader<Calculation::Num>> response_reader;
+    };
+
 
 };
 

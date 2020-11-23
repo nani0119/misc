@@ -1,9 +1,13 @@
+#include <thread>
+
 #include <grpcpp/health_check_service_interface.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/ext/health_check_service_server_builder_option.h>
 
 #include "calc_server.h"
+#include "calc_async_server.h"
 #include "custom_health_check_server.h"
+
 
 #define USE_CUSTOM_HEALTH_CHECK 1
 
@@ -40,14 +44,44 @@ class ServerGlobalCallback:public grpc::Server::GlobalCallbacks
     }
 };
 
-
-
-
+void handleAsyncRpcs(Calculation::CalculateAsyncService::AsyncService *service, grpc::ServerCompletionQueue *cq)
+{
+    void *tag;
+    bool ok;
+    CallData *callDate = new CallData(service, cq);
+    while (1)
+    {
+        cq->Next(&tag, &ok);
+        if (ok)
+        {
+            if(static_cast<CallData *>(tag)->isFinished())
+            {
+                delete callDate;
+                callDate = new CallData(service, cq);
+            }
+            else
+            {
+                static_cast<CallData *>(tag)->proceed();
+            }
+        }
+        else
+        {
+            std::cout <<"cq is not ok"<<std::endl;
+        }
+        
+    }
+}
 
 void RunServer()
 {
     std::string server_address("0.0.0.0:50051");
+
     CalculateServiceImpl calcSyncService;
+
+    Calculation::CalculateAsyncService::AsyncService calcAsyncService;
+
+    std::unique_ptr<grpc::ServerCompletionQueue> cq;
+
     std::cout <<"grpc version:"<< grpc::Version() << std::endl;
     
     grpc::EnableDefaultHealthCheckService(true);
@@ -74,24 +108,38 @@ void RunServer()
 #endif
 
     builder.RegisterService(&calcSyncService);
+    
+    builder.RegisterService(&calcAsyncService);
+
+    cq = builder.AddCompletionQueue();
+
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
 
-#if 1
+#if USE_CUSTOM_HEALTH_CHECK
     grpc::HealthCheckServiceInterface* healthService = server->GetHealthCheckService();
-    std::cout << "disable calcSyncService" << std::endl;
+    std::cout << "enable calcSyncService" << std::endl;
     healthService->SetServingStatus("calcSyncService", true);
     //healthService->Shutdown();
 #endif
     
-    
+
+    std::thread t{handleAsyncRpcs, &calcAsyncService, cq.get()};
+
     std::cout << "Server listening on " << server_address << std::endl;
 
+
+
     server->Wait();
+    t.join();
+
+    server->Shutdown();
+    cq->Shutdown();
 }
 
 int main(int argc, char const *argv[])
 {
     RunServer();
+    
     return 0;
 }

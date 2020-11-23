@@ -125,8 +125,10 @@ const char descriptor_table_protodef_calc_5fadd_2eproto[] PROTOBUF_SECTION_VARIA
   "lculation.Num\032\020.Calculation.Sum(\001\022<\n\016get"
   "RamdomTotal\022\026.google.protobuf.Empty\032\020.Ca"
   "lculation.Num0\001\022=\n\023exchangeRamdomTotal\022\020"
-  ".Calculation.Num\032\020.Calculation.Num(\0010\001b\006"
-  "proto3"
+  ".Calculation.Num\032\020.Calculation.Num(\0010\0012I"
+  "\n\025CalculateAsyncService\0220\n\ngetPlusOne\022\020."
+  "Calculation.Num\032\020.Calculation.Numb\006proto"
+  "3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_calc_5fadd_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -139,7 +141,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_cal
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_calc_5fadd_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_calc_5fadd_2eproto = {
-  false, false, descriptor_table_protodef_calc_5fadd_2eproto, "calc_add.proto", 526,
+  false, false, descriptor_table_protodef_calc_5fadd_2eproto, "calc_add.proto", 601,
   &descriptor_table_calc_5fadd_2eproto_once, descriptor_table_calc_5fadd_2eproto_sccs, descriptor_table_calc_5fadd_2eproto_deps, 3, 2,
   schemas, file_default_instances, TableStruct_calc_5fadd_2eproto::offsets,
   file_level_metadata_calc_5fadd_2eproto, 3, file_level_enum_descriptors_calc_5fadd_2eproto, file_level_service_descriptors_calc_5fadd_2eproto,
