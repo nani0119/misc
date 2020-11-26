@@ -15,3 +15,7 @@ catkin_ws/.vscode/
 #grpc example
 grpc_example/build/
 grpc_example/.vscode/
+
+#openssl example
+openssl_example/build/
+openssl_example/.vscode/
