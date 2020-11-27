@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 set(MODULE_NAME hash)
 
-
 find_package(OpenSSL REQUIRED)
 
 # 添加链接库

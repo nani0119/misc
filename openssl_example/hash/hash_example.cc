@@ -11,69 +11,98 @@ typedef struct Student_st
     char otherInfo[200];
 } Student;
 
-int studentCompare(const void *a, const void *b)
+DECLARE_LHASH_HASH_FN(item, Student);
+DECLARE_LHASH_COMP_FN(item, Student);
+DECLARE_LHASH_DOALL_ARG_FN(item, Student, int);
+
+DEFINE_LHASH_OF(Student);
+
+
+unsigned long item_hash(const Student *a)
 {
-    const char *namea = ((const Student*)a)->name;
-    const char *nameb = ((const Student*)b)->name;
+    unsigned long hashCode = 0;
+    for(int i = 0; i < strlen(a->name); i++)
+    {
+        hashCode += (a->name[i] << i*8);
+    }
+    return hashCode;
+}
+IMPLEMENT_LHASH_HASH_FN(item, Student);
+
+int item_cmp(const Student* a, const Student* b)
+{
+    const char *namea = a->name;
+    const char *nameb = b->name;
     return strcmp(namea, nameb);
 }
+IMPLEMENT_LHASH_COMP_FN(item, Student);
 
-void printValue(void *a)
+
+void item_print_arg(Student* a, int* flag)
 {
-    printf("name :%s\n", ((Student *)a)->name);
-    printf("age :%d\n", ((Student *)a)->age);
-    printf("otherInfo : %s\n", ((Student *)a)->otherInfo);
+    printf("%s:flag:%d name:%s\n",__func__, *flag, a->name);
+}
+IMPLEMENT_LHASH_DOALL_ARG(Student, int);
+
+
+void item_print(Student* a)
+{
+    printf("%s:name:%s age:%d otherinfo:%s\n",__func__, a->name, a->age, a->otherInfo);
 }
 
-void printValueWithArg(void *a, void *b)
+void item_release(Student* a)
 {
-    int flag = 0;
-    flag = *(int*)b;
-    printf("flag:%d\n", flag);
-    printf("name :%s\n", ((Student *)a)->name);
-    printf("age :%d\n", ((Student *)a)->age);
-    printf("otherInfo : %s\n", ((Student *)a)->otherInfo);
+    printf("%s: name:%s\n",__func__, a->name);
 }
 
-int main()
+int main(int argc, char*argv[])
 {
-    int flag = 11;
-    OPENSSL_LHASH *h;
-    Student s1 = {"zcp", 28, "hu bei"},
-            s2 = {"forxy", 28, "no info"},
-            s3 = {"skp", 24, "student"},
-            s4 = {"zhao_zcp", 28, "zcp's name"},
-            *s5;
-    void *data;
-    h = OPENSSL_LH_new(NULL, studentCompare);
-    if (h == NULL)
+    int flag = 1;
+    Student s[] = 
     {
-        printf("err.\n");
+            {"zcp", 28, "hu bei"},
+            {"forxy", 28, "no info"},
+            {"skp", 24, "student"},
+            {"zhao_zcp", 28, "zcp's name"},
+    };
+
+    Student sr = {"skp", 0, ""};
+
+    LHASH_OF(Student)* htable = lh_Student_new(item_hash, item_cmp);
+    if(htable == NULL)
+    {
+        printf("htable is null\n");
         return -1;
     }
-    data = &s1;
-    OPENSSL_LH_insert(h, data);
-    data = &s2;
-    OPENSSL_LH_insert(h, data);
-    data = &s3;
-    OPENSSL_LH_insert(h, data);
-    data = &s4;
-    OPENSSL_LH_insert(h, data);
-    /* 打印*/
-    OPENSSL_LH_doall(h, printValue);
-    printf("========================================\n");
-    OPENSSL_LH_doall_arg(h, printValueWithArg, (void *)(&flag));
-    data = OPENSSL_LH_retrieve(h, (const void *)"skp");
-    if (data == NULL)
+
+    for(int i = 0; i < sizeof(s)/sizeof(s[0]); i++)
     {
-        printf("can not look up skp!\n");
-        OPENSSL_LH_free(h);
-        return -1;
+        Student *newItem = lh_Student_insert(htable, &s[i]);
+
+        if(lh_Student_error(htable) && !newItem)
+        {
+            printf("insert item fail\n");
+        }
     }
-    s5 = (Student*)data;
-    printf("student name : %s\n", s5->name);
-    printf("sutdent age : %d\n", s5->age);
-    printf("student otherinfo : %s\n", s5->otherInfo);
-    OPENSSL_LH_free(h);
+
+    printf("num of item:%ld\n", lh_Student_num_items(htable));
+
+    printf("=================================================\n");
+    lh_Student_doall(htable, item_print);
+
+    Student* retri = lh_Student_retrieve(htable, &sr);
+    printf("=================================================\n");
+    item_print(retri);
+
+    printf("=================================================\n");
+    retri = lh_Student_delete(htable , &sr);
+
+    lh_Student_doall_int(htable, item_print_arg, &flag);
+
+    printf("=================================================\n");
+    lh_Student_doall(htable, item_release);
+
+    lh_Student_free(htable);
+
     return 0;
 }
