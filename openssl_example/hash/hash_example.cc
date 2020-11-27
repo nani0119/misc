@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <openssl/lhash.h>
+#include <openssl/bio.h>
 
 typedef struct Student_st
 {
@@ -58,6 +59,7 @@ void item_release(Student* a)
 int main(int argc, char*argv[])
 {
     int flag = 1;
+    BIO* f = BIO_new_file("hstable_state.txt", "w+");
     Student s[] = 
     {
             {"zcp", 28, "hu bei"},
@@ -86,7 +88,7 @@ int main(int argc, char*argv[])
     }
 
     printf("num of item:%ld\n", lh_Student_num_items(htable));
-
+    lh_Student_node_usage_stats_bio(htable, f);
     printf("=================================================\n");
     lh_Student_doall(htable, item_print);
 
@@ -99,9 +101,11 @@ int main(int argc, char*argv[])
 
     lh_Student_doall_int(htable, item_print_arg, &flag);
 
+    lh_Student_node_usage_stats_bio(htable, f);
     printf("=================================================\n");
     lh_Student_doall(htable, item_release);
 
+    BIO_free(f);
     lh_Student_free(htable);
 
     return 0;
