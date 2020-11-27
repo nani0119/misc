@@ -54,7 +54,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/hash")
 #添加子目录
 add_subdirectory(stack)
 add_subdirectory(hash)
-
+add_subdirectory(memory)
 # =============================================================
 
 #指定安装时使用的路径前缀
