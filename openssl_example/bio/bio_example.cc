@@ -6,6 +6,7 @@
 #include <openssl/ssl.h>
 
 
+
 void test_mem_bio()
 {
     BIO*  b = NULL;
@@ -107,6 +108,22 @@ void test_fd_bio()
     BIO_free(bOut);
 }
 
+void bio_indent(const char* pp, int len)
+{
+    int ret,indent;
+    BIO *bp;
+    FILE *fp;
+    printf("===============================================\n");
+
+    bp=BIO_new(BIO_s_file());
+    BIO_set_fp(bp,stdout,BIO_NOCLOSE);
+
+    indent=5;
+    ret=BIO_dump_indent(bp,pp,len,indent);
+    BIO_free(bp);
+
+}
+
 void test_md_bio()
 {
     BIO *bmd = NULL,*b=NULL;
@@ -126,11 +143,8 @@ void test_md_bio()
 
     len = BIO_write(b,"openssl",8);
     len = BIO_gets(b,tmp,1024);
-    for(int i = 0; i < strlen(tmp); i++)
-    {
-        printf("%08x ", tmp[i]);
-    }
-    printf("\n");
+
+    bio_indent(tmp, len);
 
     BIO_free(b);
 }
@@ -161,11 +175,7 @@ void test_ciper_bio()
     len=BIO_write(b,"openssl",7);
     encLen=BIO_read(b,tmp,1024);
     printf("enc:\n");
-    for(int i = 0; i < encLen; i++)
-    {
-        printf("%02x ", tmp[i]);
-    }
-    printf("\n");
+    bio_indent(tmp, encLen);
     BIO_free(b);
 
     /* 解密 */
@@ -227,29 +237,7 @@ void test_ssl_bio()
 }
 
 
-void test_bio_indent()
-{
-    int ret,len,indent;
-    BIO *bp;
-    char *pp,buf[5000];
-    FILE *fp;
-    printf("===============================================\n");
 
-    bp=BIO_new(BIO_s_file());
-    BIO_set_fp(bp,stdout,BIO_NOCLOSE);
-    printf("method name:%s\n", BIO_method_name(bp));
-    printf("method type:%04x\n",BIO_method_type(bp));
-
-    fp=fopen("der.cer","rb");
-    len=fread(buf,1,5000,fp);
-    fclose(fp);
-
-    pp=buf;
-    indent=10;
-    ret=BIO_dump_indent(bp,pp,len,indent);
-    BIO_free(bp);
-
-}
 
 int main(int argc, char const *argv[])
 {
@@ -259,7 +247,6 @@ int main(int argc, char const *argv[])
     test_md_bio();
     test_ciper_bio();
     //test_ssl_bio();
-    //test_bio_indent();
 
     return 0;
 }
