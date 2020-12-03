@@ -5,7 +5,7 @@ set(MODULE_NAME bio)
 find_package(OpenSSL REQUIRED)
 
 # 添加链接库
-set(EXTRA_LIBS ${EXTRA_LIBS} "${OPENSSL_LIBRARIES}")
+set(EXTRA_LIBS ${EXTRA_LIBS} "${OPENSSL_LIBRARIES}"  "-pthread")
 
 
 # 添加头文件路径

@@ -1,252 +1,265 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <thread>
+
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 
+// sink/source
 
-
-void test_mem_bio()
+void ss_file_bio()
 {
-    BIO*  b = NULL;
-    int   len = 0;
-    char* out = NULL;
-    char* in = "test mem bio";
-    printf("===============================================\n");
+    printf("====================================================\n");
+    BIO* bio_out = BIO_new_fp(stdout, BIO_NOCLOSE);
+    BIO_printf(bio_out, "Hello world\n");
+    BIO_free(bio_out);
+    //==========================
 
-    b = BIO_new(BIO_s_mem());
-    printf("method name:%s\n", BIO_method_name(b));
-    printf("method type:%04x\n",BIO_method_type(b));
+    bio_out = BIO_new(BIO_s_file());
+    BIO_set_fp(bio_out, stdout, BIO_NOCLOSE);
+    BIO_printf(bio_out, "Hello world\n");
+    BIO_free(bio_out);
 
-    len = BIO_write(b, in, strlen(in));
-    printf("BIO_write: %d:%s\n", len, in);
+    //===========================
+    char buf[16] = {0};
+    bio_out = BIO_new_file("ss_file.txt", "w");
+    BIO_write(bio_out, "Hello ", 6);
+    BIO_printf(bio_out, "%s", "world");
+    BIO_free(bio_out);
 
-    in = "openssl";
-    len = BIO_printf(b, in, strlen(in));
-    printf("BIO_printf: %d:%s\n", len, in);
+    bio_out = BIO_new_file("ss_file.txt", "r");
+    BIO_read(bio_out, buf, 16);
+    printf("%s\n", buf);
+    BIO_free(bio_out);
 
-    len = BIO_ctrl_pending(b);
-    printf("total len:%d\n", len);
+    //============================
+    memset(buf, 0, 16);
+    bio_out = BIO_new(BIO_s_file());
+    //BIO_rw_filename
+    BIO_write_filename(bio_out, (void*)"ss_fd.txt");
+    BIO_printf(bio_out, "%s", "Hello ");
+    BIO_free(bio_out);
 
-    out=(char *)OPENSSL_zalloc(len);
-    len = BIO_read(b, out, len/2);
-    printf("BIO_read:%s\n", out);
+    bio_out = BIO_new(BIO_s_file());
+    BIO_append_filename(bio_out, (void*)"ss_fd.txt");
+    BIO_write(bio_out, "world", 5);
+    BIO_free(bio_out);
 
-    len = BIO_read(b, out, len);
-    printf("BIO_read:%s\n", out);
+    bio_out = BIO_new(BIO_s_file());
+    BIO_read_filename(bio_out, "ss_fd.txt");
+    BIO_read(bio_out, buf, 16);
+    printf("%s\n", buf);
+    BIO_free(bio_out);
 
-    OPENSSL_free(out);
-    BIO_free(b);
+    //============================
+    bio_out = BIO_new(BIO_s_fd());
+    BIO_set_fd(bio_out, fileno(stdout), BIO_NOCLOSE);
+    BIO_puts(bio_out, "Hello world\n");
+    BIO_free(bio_out);
 }
 
-
-void test_file_bio()
+void ss_null_bio()
 {
-    BIO*  b = NULL;
-    int   len = 0;
-    int   outLen = 0;
-    char* out = NULL;
-    char* in = "test file bio";
-
-    printf("===============================================\n");
-    b = BIO_new_file("bio_file.txt", "w");
-    printf("method name:%s\n", BIO_method_name(b));
-    printf("method type:%04x\n",BIO_method_type(b));
-
-
-    len = BIO_write(b, in, strlen(in));
-    printf("BIO_write: %d:%s\n", len, in);
-
-    in = "openssl";
-    len = BIO_printf(b, "%s", in);
-    printf("BIO_printf: %d:%s\n", len, in);
-
-    BIO_free(b);
-
-    b = BIO_new_file("bio_file.txt", "r");
-    len = BIO_pending(b);
-    printf("total len:%d\n", len);
-
-
-    len=50;
-    out=(char *)OPENSSL_zalloc(len);
-    len = 50;
-    while(len > 0)
-    {
-        len = BIO_read(b, out+outLen, len);
-        printf("BIO_read:%d\n", len);
-        outLen += len;
-    }
-    printf("data:%s\n", out);
-    OPENSSL_free(out);
-    BIO_free(b);
+    char buf[16] = {'a'};
+    BIO* bio = BIO_new(BIO_s_null());
+    printf("====================================================\n");
+    BIO_write(bio, "Hello world\n", 11);
+    BIO_read(bio, buf, 16);
+    printf("%s\n", buf);
+    BIO_free(bio);
 }
 
-void test_fd_bio()
+void ss_mem_bio()
 {
-    int   len = 0;
-    char* out = NULL;
-    printf("===============================================\n");
+    printf("====================================================\n");
+    char buf[16] = {0};
 
-    BIO* bOut = BIO_new_fd(1, BIO_CLOSE);  //stdout
-    BIO* bIn = BIO_new_fd(0, BIO_CLOSE);   // stdin
-    printf("method name:%s\n", BIO_method_name(bIn));
-    printf("method type:%04x\n",BIO_method_type(bIn));
-    len=50;
-    out=(char *)OPENSSL_zalloc(len);
-    len = 50;
-    while(len > 0)
-    {
-        len = BIO_read(bIn, out, len);
-        printf("BIO_read:%d\n", len);
-        len = BIO_write(bOut, out, len);
-        printf("BIO_write:%d\n", len);
-    }
-    OPENSSL_free(out);
-    BIO_free(bIn);
-    BIO_free(bOut);
+    BIO* bio = BIO_new(BIO_s_mem());
+    // 不释放BUF_MEM结构
+    BIO_set_close(bio, BIO_NOCLOSE);
+
+    BIO_puts(bio, "Hello world");
+    BIO_read(bio, buf, 11);
+    printf("%s", buf);
+
+    char* pbuf;
+    long len = BIO_get_mem_data(bio, &pbuf);
+    printf("%s\n", pbuf);
+    
+    // 取出BUF_MEM结构
+    BUF_MEM* bmPtr;
+    BIO_get_mem_ptr(bio, &bmPtr);
+    printf("%s\n", bmPtr->data);
+    BUF_MEM_free(bmPtr);
+    BIO_free(bio);
+
+    //===========================================================
+    bio = BIO_new(BIO_s_mem());
+    BIO_set_close(bio, BIO_NOCLOSE);
+    BUF_MEM* bmPtrNew = (BUF_MEM*)OPENSSL_zalloc(sizeof(BUF_MEM));
+    bmPtrNew->length = 2;
+    bmPtrNew->data = "HW";
+    BIO_set_mem_buf(bio, bmPtrNew, BIO_NOCLOSE);
+    memset(buf, 0 , 16);
+    BIO_read(bio, buf, 11);
+    printf("%s\n", buf);
+    OPENSSL_free(bmPtrNew);
+    BIO_free(bio);
+
+    //==============================================================
+    char data[] = "Hello World";
+    bio = BIO_new_mem_buf(data, -1);
+    memset(buf, 0 , 16);
+    BIO_read(bio, buf, 11);
+    printf("%s\n", buf);
+    BIO_free(bio);
+
+    //==========================================
+    memset(buf, 0 , 16);
+    bio = BIO_new(BIO_s_mem());
+    BIO_set_mem_eof_return(bio,5);
+    len = BIO_read(bio, buf, 11);
+    printf("%d\n", len);
+    BIO_free(bio);
 }
 
-void bio_indent(const char* pp, int len)
+void ss_bio_bio()
 {
-    int ret,indent;
-    BIO *bp;
-    FILE *fp;
-    printf("===============================================\n");
+    printf("====================================================\n");
+    char buf[16] = {0};
+    BIO* bio1 = BIO_new(BIO_s_bio());
+    BIO* bio2 = BIO_new(BIO_s_bio());
+    //int BIO_new_bio_pair(BIO **bio1, size_t writebuf1, BIO **bio2, size_t writebuf2);
+    BIO_make_bio_pair(bio1,bio2);
 
-    bp=BIO_new(BIO_s_file());
-    BIO_set_fp(bp,stdout,BIO_NOCLOSE);
+    BIO_write(bio1,"hello world", 11);
+    BIO_flush(bio1);
+    BIO_read(bio2, buf, 16);
+    printf("%s\n", buf);
 
-    indent=5;
-    ret=BIO_dump_indent(bp,pp,len,indent);
-    BIO_free(bp);
+    BIO_write(bio2,"HELLO WORLD", 11);
+    BIO_flush(bio2);
+    BIO_read(bio1, buf, 16);
+    printf("%s\n", buf);
 
+    BIO_free(bio1);
+    BIO_free(bio2);
 }
 
-void test_md_bio()
+void ss_connect_bio()
 {
-    BIO *bmd = NULL,*b=NULL;
-    const EVP_MD *md = EVP_md5();
+    printf("====================================================\n");
+    char buf[16];
     int len;
-    char tmp[1024];
-    memset(tmp, 0, 1024);
-
-    printf("===============================================\n");
-    bmd = BIO_new(BIO_f_md());
-    printf("method name:%s\n", BIO_method_name(bmd));
-    printf("method type:%04x\n",BIO_method_type(bmd));
-    BIO_set_md(bmd,md);
-
-    b = BIO_new(BIO_s_null());
-    b = BIO_push(bmd,b);
-
-    len = BIO_write(b,"openssl",8);
-    len = BIO_gets(b,tmp,1024);
-
-    bio_indent(tmp, len);
-
-    BIO_free(b);
-}
-
-
-void test_ciper_bio()
-{
-    BIO *bc=NULL,*b=NULL;
-    const EVP_CIPHER *c=EVP_des_ecb();
-    int len,i, encLen;
-    char tmp[1024];
-    unsigned char key[8],iv[8];
-    printf("===============================================\n");
-    // 加密
-    for(i=0;i<8;i++)
+    BIO* out = BIO_new_fp(stdout, BIO_NOCLOSE);
+#if 0
+    BIO* clientBio = BIO_new(BIO_s_connect());
+    BIO_set_conn_hostname(clientBio, "local");
+    BIO_set_conn_address(clientBio, "127.0.0.1");
+    BIO_set_conn_port(clientBio,"9999");
+#else
+    BIO* clientBio =  BIO_new_connect("127.0.0.1:9999");
+    BIO_set_nbio(clientBio, 0);
+#endif
+    if(BIO_do_connect(clientBio) <= 0)
     {
-        memset(&key[i],i+1,1);
-        memset(&iv[i],i+1,1);
-    }
-
-    bc=BIO_new(BIO_f_cipher());
-    printf("method name:%s\n", BIO_method_name(bc));
-    printf("method type:%04x\n",BIO_method_type(bc));
-    BIO_set_cipher(bc,c,key,iv,1);
-
-    b= BIO_new(BIO_s_null());
-    b=BIO_push(bc,b);
-    len=BIO_write(b,"openssl",7);
-    encLen=BIO_read(b,tmp,1024);
-    printf("enc:\n");
-    bio_indent(tmp, encLen);
-    BIO_free(b);
-
-    /* 解密 */
-    BIO *bdec=NULL,*bd=NULL;
-    const EVP_CIPHER *cd=EVP_des_ecb();
-    bdec=BIO_new(BIO_f_cipher());
-    BIO_set_cipher(bdec,cd,key,iv,0);
-    bd= BIO_new(BIO_s_null());
-    bd=BIO_push(bdec,bd);
-    len=BIO_write(bdec,tmp,encLen);
-    memset(tmp, 0, 1024);
-    len=BIO_read(bdec,tmp, 1024);
-    printf("denc:%s\n", tmp);
-    BIO_free(bdec);
-}
-
-
-void test_ssl_bio()
-{
-    BIO *sbio, *out;
-    int len;
-    char tmpbuf[1024];
-    SSL_CTX *ctx;
-    SSL *ssl;
-    printf("===============================================\n");
-    SSLeay_add_ssl_algorithms();
-    OpenSSL_add_all_algorithms();
-    ctx = SSL_CTX_new(SSLv23_client_method());
-    sbio = BIO_new_ssl_connect(ctx);
-    BIO_get_ssl(sbio, &ssl);
-    if(!ssl)
-    {
-        fprintf(stderr, "Can not locate SSL pointer\n");
+        printf("connect fail\n");
         return;
     }
-    SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
-    BIO_set_conn_hostname(sbio, "github.com:https");
-    out = BIO_new_fp(stdout, BIO_NOCLOSE);
-    BIO_printf(out,"connecting... ...\n");
-    if(BIO_do_connect(sbio) <= 0)
+    while(1)
     {
-        fprintf(stderr, "Error connecting to server\n");
-        return;
+        len = BIO_read(clientBio, buf, 16);
+        if(buf[0] == 'q')
+            break;
+        BIO_write(out, buf, len);
+        BIO_flush(out);
     }
-    if(BIO_do_handshake(sbio) <= 0)
-    {
-        fprintf(stderr, "Error establishing SSL connection\n");
-        return;
-    }
-    BIO_puts(sbio, "GET / HTTP/1.0\n\n");
-    for(;;)
-    {
-        len = BIO_read(sbio, tmpbuf, 1024);
-        if(len <= 0) break;
-        BIO_write(out, tmpbuf, len);
-    }
-    BIO_free_all(sbio);
+
     BIO_free(out);
+    BIO_free(clientBio);
+
 }
 
+void ss_accept_bio()
+{
+    printf("*****************************************************\n");
+    int len;
+    char buf[16] = {0};
+    BIO* in = BIO_new_fp(stdin, BIO_NOCLOSE);
+#if 1
+    BIO* serverBio = BIO_new_accept("9999");
+#else
+    BIO* serverBio = BIO_new(BIO_s_accept());
+    BIO_set_accept_port(serverBio, "9999");
+#endif
+
+     /* 首先调用BIO_accept启动接受BIO */
+     if(BIO_do_accept(serverBio) <= 0) 
+     {
+         printf("Error setting up accept\n");
+         return;
+     }
+     /* 等待连接建立*/
+     if(BIO_do_accept(serverBio) <= 0) 
+     {
+         printf("Error accepting connection\n");
+         return;
+     }
 
 
+    BIO* cbio = BIO_pop(serverBio);
+    BIO_puts(cbio, "Connected\n");
+
+    printf("type q for exit\n");
+    while(1)
+    {
+        len = BIO_read(in, buf, 1);
+        BIO_write(cbio, buf, len);
+        if(buf[0] == 'q')
+        {
+            break;
+        }
+    }
+
+    BIO_free(cbio);
+    BIO_free(in);
+    BIO_free(serverBio);
+}
+// filter type
+
+void f_null_bio()
+{
+    printf("====================================================\n");
+    // 简单传递到BIO链中的下一个BIO
+    BIO* fNull = BIO_new(BIO_f_null());
+    BIO* out = BIO_new_fp(stdout, BIO_NOCLOSE);
+
+    BIO_push(fNull, out);
+    BIO_puts(fNull, "hello world\n");
+
+    BIO_free_all(fNull);
+}
 
 int main(int argc, char const *argv[])
 {
-    test_mem_bio();
-    test_file_bio();
-    //test_fd_bio();
-    test_md_bio();
-    test_ciper_bio();
-    //test_ssl_bio();
+    // source/sink type
+    ss_file_bio();
+    ss_null_bio();
+    ss_mem_bio();
+    ss_bio_bio();
+#if 0
+    std::thread s {ss_accept_bio};
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::thread c {ss_connect_bio};
+    c.join();
+    s.join();
+#endif
+    f_null_bio();
 
     return 0;
 }
