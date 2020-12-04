@@ -245,6 +245,148 @@ void f_null_bio()
     BIO_free_all(fNull);
 }
 
+void f_buffer_bio()
+{
+    printf("====================================================\n");
+    BIO* in = BIO_new_fp(stdin, BIO_NOCLOSE);
+    BIO* out = BIO_new_fp(stdout, BIO_NOCLOSE);
+    BIO* bio = BIO_new(BIO_f_buffer());
+    char buf[16];
+
+    BIO_push(in, bio);
+    BIO_push(bio, out);
+    
+    BIO_gets(in, buf, 11);
+    BIO_puts(bio, buf);
+    BIO_flush(bio);
+
+    BIO_free(in);
+    BIO_free(out);
+    BIO_free(bio);
+}
+
+void f_base64_bio()
+{
+    printf("====================================================\n");
+    char buf[16] = {0};
+    BIO* out = BIO_new_fp(stdout, BIO_NOCLOSE);
+    BIO* outFile = BIO_new_file("base64_file.txt", "w");
+    BIO* bio = BIO_new(BIO_f_base64());
+    BIO_push(bio, outFile);
+
+    BIO_write(bio, "Hello world", 11);
+    BIO_flush(bio);
+    BIO_pop(outFile);
+    BIO_free(outFile);
+
+
+    // ======================================
+    memset(buf, 0, 16);
+    outFile = BIO_new_file("base64_file.txt", "r");
+    BIO_read(outFile, buf, 16);
+    BIO_seek(outFile, 0);
+    BIO_write(out, buf, 16);
+    BIO_write(out, "\n", 1);
+
+    BIO_push(bio, outFile);
+
+    BIO_read(bio, buf, 11);
+    BIO_write(out, buf, 11);
+    BIO_write(out, "\n", 1);
+    
+    BIO_free(outFile);
+    BIO_free(bio);
+    BIO_free(out);
+}
+
+void f_cipher_bio()
+{
+    printf("====================================================\n");
+    unsigned char key[8],iv[8];
+    char buf[1024] = {0};
+    BIO* outFile = BIO_new_file("cipher_file.txt", "w");
+    BIO* base64 = BIO_new(BIO_f_base64());
+    BIO* cipher = BIO_new(BIO_f_cipher());
+
+    const EVP_CIPHER *c=EVP_des_ecb();
+
+    for(int i = 0; i < 8; i++)
+    {
+        memset(&key[i],i+1,1);
+        memset(&iv[i],i+1,1);
+    }
+
+    BIO_set_cipher(cipher,c,key,iv,1);
+
+    BIO_push(cipher, base64);
+    BIO_push(base64, outFile);
+
+    int len=BIO_write(cipher,"Hello world", 11);
+    BIO_flush(cipher);
+    BIO_pop(outFile);
+    BIO_free(outFile);
+
+
+    //=====================================================
+    outFile = BIO_new_file("cipher_file.txt", "r");
+    BIO_read(outFile, buf, 1024);
+    printf("%s", buf);
+    BIO_seek(outFile, 0);
+    memset(buf, 0, 1024);
+
+    BIO_push(base64, outFile);
+
+    BIO_set_cipher(cipher,c,key,iv,0);
+    BIO_read(cipher, buf, 1024);
+    if(BIO_get_cipher_status(cipher))
+    {
+        printf("%s\n", buf);
+    }
+
+    BIO_free_all(cipher);
+}
+
+void f_md_bio()
+{
+    printf("====================================================\n");
+    char buf[1024] = {0};
+
+    BIO* output = BIO_new_fp(stdout, BIO_NOCLOSE);
+    BIO* base64 = BIO_new(BIO_f_base64());
+
+    BIO* md = BIO_new(BIO_f_md());
+    BIO_set_md(md, EVP_md5());
+
+    BIO_push(base64, output);
+    BIO_push(md, base64);
+    
+    BIO_write(md, "Hello world", 11);
+    BIO_flush(md);
+
+    BIO_free_all(md);
+    //==============================================================
+
+    output = BIO_new_fp(stdout, BIO_NOCLOSE);
+    BIO* input = BIO_new_file("ss_file.txt", "r");
+    base64 = BIO_new(BIO_f_base64());
+    md = BIO_new(BIO_f_md());
+    BIO_set_md(md, EVP_md5());
+
+    BIO_push(md, input);
+
+    memset(buf, 0, 1024);
+    long len = BIO_read(md, buf, 1024);
+
+    BIO_push(base64, output);
+    BIO_write(base64, buf, len);
+    BIO_flush(base64);
+    
+
+    BIO_free_all(md);
+    BIO_free(base64);
+}
+
+
 int main(int argc, char const *argv[])
 {
     // source/sink type
@@ -260,6 +402,10 @@ int main(int argc, char const *argv[])
     s.join();
 #endif
     f_null_bio();
+    //f_buffer_bio();
+    f_base64_bio();
+    f_cipher_bio();
+    f_md_bio();
 
     return 0;
 }
