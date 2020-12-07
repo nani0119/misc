@@ -56,6 +56,7 @@ add_subdirectory(stack)
 add_subdirectory(hash)
 add_subdirectory(memory)
 add_subdirectory(bio)
+add_subdirectory(conf)
 # =============================================================
 
 #指定安装时使用的路径前缀
