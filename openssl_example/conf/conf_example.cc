@@ -1,7 +1,8 @@
 #include <openssl/conf.h>
 
 
-void printfConfValue()
+
+void printfConfValue(CONF_METHOD* meth)
 {
     CONF* conf;
     long eline = 0;  //出错行
@@ -17,7 +18,7 @@ void printfConfValue()
     defaultConfFile = CONF_get1_default_config_file();
     printf("defult config file:%s\n", defaultConfFile);
 
-    conf = NCONF_new(NULL);
+    conf = NCONF_new(meth);
 #if 0
     bp = BIO_new_file(defaultConfFile, "r");
     NCONF_load_bio(conf, bp, &eline);
@@ -61,12 +62,33 @@ void printfConfValue()
     }
 
     NCONF_free(conf);
+}
 
+//=================================================================
 
+extern CONF_METHOD custom_method;
+
+CONF *customCreate(CONF_METHOD *meth)
+{
+    printf("%s\n", __func__);
+    CONF *ret;
+
+    ret = (CONF *)OPENSSL_malloc(sizeof(*ret));
+    if (ret != NULL)
+        if (meth->init(ret) == 0)
+        {
+            OPENSSL_free(ret);
+            ret = NULL;
+        }
+    return ret;
 }
 
 int main(int argc, char const *argv[])
 {
-    printfConfValue();
+    printfConfValue(NULL);
+    printf("======================================================\n");
+    CONF_METHOD* custom_method = NCONF_default();
+    custom_method->create = customCreate;  // replace creat function
+    printfConfValue(custom_method);
     return 0;
 }
