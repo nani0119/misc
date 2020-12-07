@@ -89,8 +89,11 @@ void rand_example()
         printf("RAND_bytes() fail:%ld\n", ERR_get_error());
     }
 
+    RAND_cleanup();
+
 }
 
+// RAND_set_rand_method 设置自定义RAND_METHOD *meth，　可以生成自己的随机函数模块
 
 int main(int argc, char const *argv[])
 {
