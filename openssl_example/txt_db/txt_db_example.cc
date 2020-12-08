@@ -8,39 +8,28 @@
 
 // name  phone  email null
 
-int id_filter(char** in)
+int id_qual(char** in)
 {
-    //printf("%s\n", __func__);
-    if(in[0][0]-'0' < 10)
-    {
-        return 0;
-    }
-    else
+    printf("%s\n", __func__);
+    if(in[0][0]-'0' < 3)
     {
         return 1;
     }
+    return 0;
 }
 
 
 unsigned long id_hash(const char** in)
 {
-    //printf("%s\n", __func__);
-    const char *n;
+    printf("%s\n", __func__);
+    return in[0][0] - '0';
 
-    n = in[0];
-    while (*n == '0')
-        n++;
-    return OPENSSL_LH_strhash(n);
 }
 
 int id_cmp(const char** in1, const char** in2)
 {
-    //printf("%s\n", __func__);
-    const char *aa, *bb;
-
-    for (aa = in1[0]; *aa == '0'; aa++) ;
-    for (bb = in2[0]; *bb == '0'; bb++) ;
-    return strcmp(aa, bb);
+    printf("%s\n", __func__);
+    return in1[0][0] - in2[0][0];
 }
 
 
@@ -104,41 +93,40 @@ void txt_db_list()
         printf("load txt db fail\n");
         return;
     }
-
+    printf("TXT_DB_read begin\n");
     TXT_DB *db = TXT_DB_read(in, 5);
     if(!db)
     {
         printf("read txt db fail\n");
         return;
     }
-
+    printf("TXT_DB_read end\n");
     // 0 列建立索引
-    ret = TXT_DB_create_index(db, 0, id_filter, id_hash, id_cmp);
+    printf("TXT_DB_create_index begin\n");
+    ret = TXT_DB_create_index(db, 0, id_qual, id_hash, id_cmp);
     if(ret != 1)
     {
         printf("create txt db index fail\n");
         goto end;
     }
-
+    printf("TXT_DB_create_index end\n");
     for(int i = 1; i < 6; i++)
     {
         char** result_row;
-        char** row=(char **)OPENSSL_zalloc(sizeof(char *) * (4 + 1));
+        char** row=(char **)OPENSSL_zalloc(sizeof(char *) * (1 + 1));
 
         row[0] = (char *)OPENSSL_malloc(10);
         row[0][0] = i + '0';
 
         row[1] = NULL;
-        row[2] = NULL;
-        row[3] = NULL;
-        row[4] = NULL;
 
-
+        printf("TXT_DB_get_by_index begin\n");
         result_row = TXT_DB_get_by_index(db, 0, row);
+        printf("TXT_DB_get_by_index end\n");
         if(result_row != NULL)
         {
             // id name  phone  email null
-            for(int j = 0; result_row[j]; j++)
+            for(int j = 0; strlen(result_row[j]) > 0; j++)
             {
                 printf("%s\t", result_row[j]);
             }
