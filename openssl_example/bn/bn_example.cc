@@ -523,6 +523,24 @@ void bn_prime()
     BN_free(rem);
 }
 
+void bn_set_negative()
+{
+    BIGNUM* a;
+    char* dec = "123456789";
+    printf("==========================================\n");
+
+    a = BN_new();
+
+    printf("a=%s\n", dec);
+    BN_dec2bn(&a, dec);
+
+    BN_set_negative(a, 1);
+    printf("a=%s\n", BN_bn2dec(a));
+
+    BN_free(a);
+
+}
+
 int main(int argc, char const *argv[])
 {
     bn_2_xx();
@@ -532,5 +550,6 @@ int main(int argc, char const *argv[])
     bn_arithmetic_op();
     bn_rand();
     bn_prime();
+    bn_set_negative();
     return 0;
 }

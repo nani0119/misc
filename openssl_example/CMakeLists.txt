@@ -61,6 +61,7 @@ add_subdirectory(rand)
 add_subdirectory(txt_db)
 add_subdirectory(bn)
 add_subdirectory(base64)
+add_subdirectory(asn1)
 # =============================================================
 
 #指定安装时使用的路径前缀
