@@ -144,7 +144,7 @@ void asn1_der_codec()
 
 void asn1_object_create()
 {
-    const char* oid = "2.99999.3";  // object id
+    const char* oid = "2.99999.2";  // object id
     ASN1_OBJECT* obj;
     int der_len;
     unsigned char der[1024] = {0};
@@ -360,20 +360,20 @@ void printStrTab(ASN1_STRING_TABLE *str_tab)
 void asn1_STRING_TABLE()
 {
     printf("==============================%s=============================\n",__func__);
-    const char* oid1 = "2.99999.5";  // object id
-    const char* oid2 = "2.99999.4";  // object id
+    const char* oid1 = "2.99999.4";  // object id
+    const char* oid2 = "2.99999.5";  // object id
     int nid1 = OBJ_create(oid1,"testSN1", "testLN1");
     int nid2 = OBJ_create(oid2,"testSN2", "testLN2");
     printf("nid1:%d\n",nid1);
     printf("nid2:%d\n",nid2);
-
-    int ret = ASN1_STRING_TABLE_add(nid1, 1, 100, DIRSTRING_TYPE, 0);
+    //ASN1_STRING_TABLE它用于约束ASN1_STRING_set_by_NID 函数生成的 ASN1_STRING 类型
+    int ret = ASN1_STRING_TABLE_add(nid1, 7, 100, DIRSTRING_TYPE, 0);
     if(ret == 1)
     {
         printf("ASN1_STRING_TABLE_add nid %d success\n", nid1);
     }
 
-    ret = ASN1_STRING_TABLE_add(nid2, 1, 100, DIRSTRING_TYPE, 0);
+    ret = ASN1_STRING_TABLE_add(nid2, 1, 100, PKCS9STRING_TYPE, 0);
     if(ret == 1)
     {
         printf("ASN1_STRING_TABLE_add nid %d success\n", nid2);
@@ -383,10 +383,144 @@ void asn1_STRING_TABLE()
     ASN1_STRING_TABLE *str_tab2 = ASN1_STRING_TABLE_get(nid2);
     printStrTab(str_tab1);
     printStrTab(str_tab2);
+//=========================================================================
+    unsigned char out[100] = {0};
+    unsigned char in[] = {"abcdefg"};
+    int inlen = 7;
+    int inform=MBSTRING_UTF8;
+    ASN1_STRING_set_default_mask(B_ASN1_BMPSTRING);
+    ASN1_STRING *str = ASN1_STRING_set_by_NID(NULL, in, inlen, inform, nid1);
+
+    int len =i2d_ASN1_BMPSTRING(str,(unsigned char**)&out);
+
+    switch (str->type)
+    {
+    case V_ASN1_T61STRING:
+        printf("V_ASN1_T61STRING\n");
+        break;
+    case V_ASN1_IA5STRING:
+        printf("V_ASN1_IA5STRING\n");
+        break;
+    case V_ASN1_PRINTABLESTRING:
+        printf("V_ASN1_PRINTABLESTRING\n");
+        break;
+    case V_ASN1_BMPSTRING:
+        printf("V_ASN1_BMPSTRING\n");
+        break;
+    case V_ASN1_UNIVERSALSTRING:
+        printf("V_ASN1_UNIVERSALSTRING\n");
+        break;
+    case V_ASN1_UTF8STRING:
+        printf("V_ASN1_UTF8STRING\n");
+        break;
+    default:
+        printf("err");
+        break;
+    }
+
+    printf("i2d str:");
+    for(int i = 0; i < len; i++)
+    {
+        printf("%02x ", out[i]);
+    }
+    printf("\n");
 
     ASN1_STRING_TABLE_cleanup();
 }
 
+void asn1_obj_util()
+{
+    printf("==============================%s=============================\n",__func__);
+    const char* oid = "2.99999.6";
+    int nid = -1; 
+    nid = OBJ_create(oid, "short name", "long name");
+    printf("nid:\t%d\n", nid);
+    
+    const char * sn = OBJ_nid2sn(nid);
+    printf("short name:\t%s\n",sn);
+
+    const char * ln = OBJ_nid2ln(nid);
+    printf("long name:\t%s\n",ln);
+
+    nid = -1;
+    nid = OBJ_sn2nid(sn);
+    printf("sn2nid:%d\n", nid);
+
+    nid = -1;
+    nid = OBJ_ln2nid(ln);
+    printf("ln2nid:%d\n", nid);
+
+    //============================================================
+    printf("---------------------------------------------------------------\n");
+    ASN1_OBJECT *obj = OBJ_nid2obj(nid);
+    nid = -1;
+    nid = OBJ_obj2nid(obj);
+    printf("obj2nid:%d\n", nid);
+    //===========================================================
+    printf("---------------------------------------------------------------\n");
+    nid = -1;
+    nid = OBJ_txt2nid("long name");
+    printf("nid:\t%d\n", nid);
+
+    nid = -1;
+    nid = OBJ_txt2nid("short name");
+    printf("nid:\t%d\n", nid);
+    //===========================================================
+    ASN1_OBJECT * o = OBJ_txt2obj("long name", 0);
+    if(OBJ_cmp(o,obj) == 0)
+    {
+        printf("o == obj\n");
+    }
+    else
+    {
+        printf("o != obj\n");
+    }
+    
+    //============================================================
+    char buf[100] = {0};
+    int buflen = 100;
+
+    int len = OBJ_obj2txt(buf, buflen, obj, 0);
+    printf("obj2txt:");
+    for(int i = 0; i < len; i++)
+    {
+        printf("%c ", buf[i]);
+    }
+    printf("\n");
+
+    len = OBJ_obj2txt(buf, buflen, obj, 1);
+    printf("obj2txt:");
+    for(int i = 0; i < len; i++)
+    {
+        printf("%c ", buf[i]);
+    }
+    printf("\n");
+    
+    //====================================
+    len = OBJ_length(obj);
+    printf("obj size :%d\n", len);
+    const unsigned char* data = OBJ_get0_data(obj);
+    printf("obj content:");
+    for(int i = 0; i < len; i++)
+    {
+        printf("%02x ", data[i]);
+    }
+    printf("\n");
+    //====================================
+
+    unsigned char der[100] = {0};
+    len = a2d_ASN1_OBJECT(der, 100, oid, -1);
+    printf("obj    der: ");
+    for(int i = 0; i < len; i++)
+    {
+        printf("%02x ", der[i]);
+    }
+    printf("\n");
+    //======================================
+    OBJ_cleanup();
+    ASN1_OBJECT_free(obj);
+    ASN1_OBJECT_free(o);
+}
 
 int main(int argc, char const *argv[])
 {
@@ -402,5 +536,6 @@ int main(int argc, char const *argv[])
     asn1_string_dup();
     asn1_oid_der();
     asn1_STRING_TABLE();
+    asn1_obj_util();
     return 0;
 }
