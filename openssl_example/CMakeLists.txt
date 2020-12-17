@@ -65,6 +65,7 @@ add_subdirectory(asn1)
 add_subdirectory(err)
 add_subdirectory(digest)
 add_subdirectory(compress)
+add_subdirectory(rsa)
 # =============================================================
 
 #指定安装时使用的路径前缀
