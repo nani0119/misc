@@ -3,8 +3,66 @@
 #include <openssl/rsa.h>
 #include <openssl/ossl_typ.h>
 #include <openssl/objects.h>
+#include <openssl/md5.h>
 
+void rsa_key_item()
+{
+    RSA* rsaParis;
+    BIGNUM* bne;
+    char* data;
+    int bits = 512;
+    printf("======================%s=====================\n", __func__);
+    rsaParis = RSA_new();
+    bne = BN_new();
+    BN_set_word(bne, RSA_3);
+    RSA_generate_key_ex(rsaParis, bits, bne, NULL);
+    RSA_print_fp(stdout, rsaParis, 0);
 
+    //素数p
+    const BIGNUM * p = RSA_get0_p(rsaParis);
+    data = BN_bn2hex(p);
+    printf("p = %s\n", data);
+
+    //素数q
+    const BIGNUM * q = RSA_get0_q(rsaParis);
+    data = BN_bn2hex(q);
+    printf("q = %s\n", data);
+
+    // n = p*q
+    const BIGNUM * n = RSA_get0_n(rsaParis);
+    data = BN_bn2hex(n);
+    printf("n = %s\n", data);
+
+    // e 公钥指数 (e, n)公钥
+    const BIGNUM * e = RSA_get0_e(rsaParis);
+    data = BN_bn2hex(e);
+    printf("e = %s\n", data);
+
+    // d 私钥指数　（d, n）私钥
+    const BIGNUM * d = RSA_get0_d(rsaParis);
+    data = BN_bn2hex(d);
+    printf("d = %s\n", data);
+
+    // e*dmp1 = 1 (mod (p-1))
+    const BIGNUM * dmp1 = RSA_get0_dmp1(rsaParis);
+    data = BN_bn2hex(dmp1);
+    printf("dmp1 = %s\n", data);
+
+    // e*dmq1 = 1 (mod (q-1))
+    const BIGNUM * dmq1 = RSA_get0_dmq1(rsaParis);
+    data = BN_bn2hex(dmq1);
+    printf("dmq1 = %s\n", data);
+
+    // q*iqmp = 1 (mod p )
+    const BIGNUM * iqmp = RSA_get0_iqmp(rsaParis);
+    data = BN_bn2hex(iqmp);
+    printf("iqmp = %s\n", data);
+
+    BN_free(bne);
+    RSA_free(rsaParis);
+}
+
+// 大文件----> AES加密 ---->RSA传递AES秘钥----> AES解密
 void rsa_gen_key_enc_dec()
 {
     printf("======================%s=====================\n", __func__);
@@ -87,64 +145,8 @@ void rsa_gen_key_enc_dec()
     BN_free(e);
 }
 
-void rsa_key_item()
-{
-    RSA* rsaParis;
-    BIGNUM* bne;
-    char* data;
-    int bits = 512;
-    printf("======================%s=====================\n", __func__);
-    rsaParis = RSA_new();
-    bne = BN_new();
-    BN_set_word(bne, RSA_3);
-    RSA_generate_key_ex(rsaParis, bits, bne, NULL);
-    RSA_print_fp(stdout, rsaParis, 0);
 
-    //素数p
-    const BIGNUM * p = RSA_get0_p(rsaParis);
-    data = BN_bn2hex(p);
-    printf("p = %s\n", data);
-
-    //素数q
-    const BIGNUM * q = RSA_get0_q(rsaParis);
-    data = BN_bn2hex(q);
-    printf("q = %s\n", data);
-
-    // n = p*q
-    const BIGNUM * n = RSA_get0_n(rsaParis);
-    data = BN_bn2hex(n);
-    printf("n = %s\n", data);
-
-    // e 公钥指数 (e, n)公钥
-    const BIGNUM * e = RSA_get0_e(rsaParis);
-    data = BN_bn2hex(e);
-    printf("e = %s\n", data);
-
-    // d 私钥指数　（d, n）私钥
-    const BIGNUM * d = RSA_get0_d(rsaParis);
-    data = BN_bn2hex(d);
-    printf("d = %s\n", data);
-
-    // e*dmp1 = 1 (mod (p-1))
-    const BIGNUM * dmp1 = RSA_get0_dmp1(rsaParis);
-    data = BN_bn2hex(dmp1);
-    printf("dmp1 = %s\n", data);
-
-    // e*dmq1 = 1 (mod (q-1))
-    const BIGNUM * dmq1 = RSA_get0_dmq1(rsaParis);
-    data = BN_bn2hex(dmq1);
-    printf("dmq1 = %s\n", data);
-
-    // q*iqmp = 1 (mod p )
-    const BIGNUM * iqmp = RSA_get0_iqmp(rsaParis);
-    data = BN_bn2hex(iqmp);
-    printf("iqmp = %s\n", data);
-
-    BN_free(bne);
-    RSA_free(rsaParis);
-}
-
-
+// 大文件----> MD5 ----> sig------>verify
 void rsa_sign_verify()
 {
     printf("======================%s=====================\n", __func__);
@@ -155,8 +157,9 @@ void rsa_sign_verify()
     unsigned char sigret[4096] = {0};
     int sigretlen = 4096;
     BIGNUM* e;
-    int bits = 1024;
-    char* data="012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678";
+    int bits = 512;
+    unsigned char md[16] = {0};  //128
+    char* data="hello word";
     int datalen = strlen(data);
     rsaParis = RSA_new();
     e = BN_new();
@@ -164,11 +167,15 @@ void rsa_sign_verify()
     RSA_generate_key_ex(rsaParis, bits, e, NULL);
     rsaPublic = RSAPublicKey_dup(rsaParis);
     rsaPrivate = RSAPrivateKey_dup(rsaParis);
-
     printf("rsa size:%d\n", RSA_size(rsaParis));
+
+    // ==================================
+    // 计算摘要
+    MD5(data, strlen(data), md);
+
     //======================================
     // 私钥签名
-    ret = RSA_sign(NID_md5, data, datalen, sigret, &sigretlen, rsaPrivate);
+    ret = RSA_sign(NID_md5, md, 16, sigret, &sigretlen, rsaPrivate);
     printf("sigretlen:%d\n",sigretlen);
     if(ret == 1)
     {
@@ -188,7 +195,7 @@ void rsa_sign_verify()
     //================================================
     // 公钥验签
     //data = "1111111";
-    ret = RSA_verify(NID_md5, data, datalen, sigret, sigretlen, rsaPublic);
+    ret = RSA_verify(NID_md5, md, 16, sigret, sigretlen, rsaPublic);
     if(ret == 1)
     {
         printf("RSA_verify success\n");
@@ -206,8 +213,8 @@ void rsa_sign_verify()
 
 int main(int argc, char const *argv[])
 {
-    //rsa_gen_key_enc_dec();
-    //rsa_key_item();
+    rsa_key_item();
+    rsa_gen_key_enc_dec();
     rsa_sign_verify();
     return 0;
 }
