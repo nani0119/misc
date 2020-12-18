@@ -195,6 +195,9 @@ void rsa_sign_verify()
     //================================================
     // 公钥验签
     //data = "1111111";
+    // 计算摘要
+    memset(md, 0 , 16);
+    MD5(data, strlen(data), md);
     ret = RSA_verify(NID_md5, md, 16, sigret, sigretlen, rsaPublic);
     if(ret == 1)
     {
