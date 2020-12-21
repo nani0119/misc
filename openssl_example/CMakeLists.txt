@@ -66,6 +66,7 @@ add_subdirectory(err)
 add_subdirectory(digest)
 add_subdirectory(compress)
 add_subdirectory(rsa)
+add_subdirectory(dsa)
 add_subdirectory(dh)
 # =============================================================
 
