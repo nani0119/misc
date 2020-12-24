@@ -2,6 +2,7 @@
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
+#include <openssl/rsa.h>
 
 void print_bin(unsigned char* tag ,unsigned char* data, int len)
 {
@@ -153,7 +154,7 @@ void digest()
 }
 
 //==============================================================================
-
+// 对称加解密
 class evp_cipher
 {
 private:
@@ -461,7 +462,7 @@ void crypto()
 {
     unsigned char key[EVP_MAX_KEY_LENGTH] = {0};
     unsigned char iv[EVP_MAX_IV_LENGTH] = {0};
-    unsigned char* in = "1111111111111111111111111111111111111111111111111111111111111111111111111111111";
+    unsigned char* in = "hello world";
     int inlen = strlen(in);
     unsigned char out[inlen + EVP_MAX_BLOCK_LENGTH] = {0};
     int outlen = sizeof(out);
@@ -507,14 +508,171 @@ void crypto()
 
 }
 
+// 非对称加解密
+class evp_pkey_encrypt
+{
+private:
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX* ctx;
+    char err_string[1024];
+public:
+    evp_pkey_encrypt(EVP_PKEY * key):pkey(key)
+    {
+        int ret; 
+        memset(err_string, 0, 1024);
+        ERR_load_EVP_strings();
+        EVP_add_alg_module();
+        ctx = EVP_PKEY_CTX_new(pkey, NULL);
+        ret = EVP_PKEY_encrypt_init(ctx);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp pkey encrypt init fail: %s\n", err_string);
+        }
+    }
+
+    int encrypt(const unsigned char *in, size_t inlen, unsigned char *out, size_t *outlen)
+    {
+        int ret = EVP_PKEY_encrypt(ctx, out, outlen, in, inlen);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp pkey encrypt init fail: %s\n", err_string);
+        }
+        return ret;
+    }
+    
+    void evp_pkey_encrypt_info()
+    {
+        printf("PKEY name:\t%s\n", OBJ_nid2ln(EVP_PKEY_type(EVP_PKEY_base_id(pkey))));
+        printf("PKEY size:\t%d\n", EVP_PKEY_size(pkey));
+        printf("PKEY bits:\t%d\n", EVP_PKEY_bits(pkey));
+    }
+    ~evp_pkey_encrypt()
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+};
+
+
+class evp_pkey_decrypt
+{
+private:
+    EVP_PKEY *pkey;
+    EVP_PKEY_CTX* ctx;
+    char err_string[1024];
+public:
+    evp_pkey_decrypt(EVP_PKEY * key):pkey(key)
+    {
+        int ret; 
+        memset(err_string, 0, 1024);
+        ERR_load_EVP_strings();
+        EVP_add_alg_module();
+        ctx = EVP_PKEY_CTX_new(pkey, NULL);
+        ret = EVP_PKEY_decrypt_init(ctx);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp pkey decrypt init fail: %s\n", err_string);
+        }
+    }
+
+    int decrypt(const unsigned char *in, size_t inlen, unsigned char *out, size_t *outlen)
+    {
+        int ret = EVP_PKEY_decrypt(ctx, out, outlen, in, inlen);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp pkey decrypt init fail: %s\n", err_string);
+        }
+        return ret;
+    }
+    
+    void evp_pkey_decrypt_info()
+    {
+        printf("PKEY name:\t%s\n", OBJ_nid2ln(EVP_PKEY_type(EVP_PKEY_base_id(pkey))));
+        printf("PKEY size:\t%d\n", EVP_PKEY_size(pkey));
+        printf("PKEY bits:\t%d\n", EVP_PKEY_bits(pkey));
+    }
+    ~evp_pkey_decrypt()
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+};
+
+void pkey_rsa()
+{
+    BIGNUM* bne;
+    RSA* rsaParis;
+    RSA* rsaPublic;
+    RSA* rsaPrivate;
+    EVP_PKEY* pub;
+    EVP_PKEY* pri;
+    char* in = "hello world";
+    size_t inlen = strlen(in);
+    unsigned char* out;
+    size_t outlen = 0;
+    unsigned char* data;
+    size_t datalen;
+    rsaParis = RSA_new();
+    bne = BN_new();
+    BN_set_word(bne, RSA_3);
+    RSA_generate_key_ex(rsaParis, 1024, bne, NULL);
+    rsaPublic = RSAPublicKey_dup(rsaParis);
+    rsaPrivate = RSAPrivateKey_dup(rsaParis);
+
+    pub = EVP_PKEY_new();
+    EVP_PKEY_set1_RSA(pub, rsaPublic);
+
+    pri = EVP_PKEY_new();
+    EVP_PKEY_set1_RSA(pri, rsaPrivate);
+
+    evp_pkey_encrypt* e = new evp_pkey_encrypt(pub);
+    evp_pkey_decrypt* d = new evp_pkey_decrypt(pri);
+    e->evp_pkey_encrypt_info();
+    //=================================
+
+    e->encrypt((const unsigned char*)in, inlen, NULL, &outlen);
+    out = (unsigned char*)OPENSSL_zalloc(sizeof(unsigned char)*outlen);
+    e->encrypt((const unsigned char*)in, inlen, out, &outlen);
+    print_bin("enc data", out, outlen);
+
+    printf("------------------------------------------------------------\n");
+    d->evp_pkey_decrypt_info();
+    d->decrypt(out, outlen, NULL, &datalen);
+    data = (unsigned char*)OPENSSL_zalloc(sizeof(unsigned char)*datalen);
+    d->decrypt(out, outlen, data, &datalen);
+    printf("%d:%s\n", datalen, data);
+
+    RSA_free(rsaParis);
+    RSA_free(rsaPublic);
+    RSA_free(rsaPrivate);
+    BN_free(bne);
+    EVP_PKEY_free(pub);
+    EVP_PKEY_free(pri);
+    OPENSSL_free(out);
+    delete e;
+    delete d;
+}
+
+void pkey()
+{
+    pkey_rsa();
+}
 
 int main(int argc, char const *argv[])
 {
+    // 摘要
     //digest();
     printf("====================================================\n");
+    // 对称解密
     //cipher();
     printf("====================================================\n");
-    crypto();
+    // 对称加解密
+    //crypto();
+    printf("====================================================\n");
+    // 非对称加解密
+    pkey();
 
     return 0;
 }
