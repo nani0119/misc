@@ -316,11 +316,205 @@ void cipher()
     delete decrypt;
 }
 
+class evp_crypto
+{
+private:
+    EVP_CIPHER_CTX *en_ctx;
+    EVP_CIPHER_CTX *de_ctx;
+    const EVP_CIPHER *cipher;
+    char err_string[1024];
+public:
+    evp_crypto( const EVP_CIPHER *c, const unsigned char *key, const unsigned char *iv):cipher(c)
+    {
+        int ret; 
+        memset(err_string, 0, 1024);
+        ERR_load_EVP_strings();
+        EVP_add_cipher(cipher);
+
+        en_ctx = EVP_CIPHER_CTX_new();
+        EVP_CIPHER_CTX_init(en_ctx);
+        de_ctx = EVP_CIPHER_CTX_new();
+        EVP_CIPHER_CTX_init(de_ctx);
+
+        ret = EVP_EncryptInit_ex(en_ctx, cipher, NULL, key, iv);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp Encrypt init fail: %s\n", err_string);
+        }
+        
+        ret = EVP_DecryptInit_ex(de_ctx, cipher, NULL, key, iv);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp Decrypt init fail: %s\n", err_string);
+        }       
+    }
+    void evp_crypto_info()
+    {
+        printf("--------------------------------------------\n");
+        printf("cipher name:\t\t%s\n", OBJ_nid2ln(EVP_CIPHER_nid(cipher)));
+        printf("cipher nid:\t\t%d\n", EVP_CIPHER_nid(cipher));
+        printf("cipher block size:\t%d\n", EVP_CIPHER_block_size(cipher));
+        printf("cipher key size:\t%d\n", EVP_CIPHER_key_length(cipher));
+        printf("cipher iv size:\t\t%d\n", EVP_CIPHER_iv_length(cipher));
+        switch(EVP_CIPHER_mode(cipher))
+        {
+            case EVP_CIPH_ECB_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_ECB_MODE\n");
+                break;
+            case EVP_CIPH_CBC_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_CBC_MODE\n");
+                break;
+            case EVP_CIPH_CFB_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_CFB_MODE\n");
+                break;
+            case EVP_CIPH_OFB_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_OFB_MODE\n");
+                break;
+            case EVP_CIPH_CTR_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_CTR_MODE\n");
+                break;
+            case EVP_CIPH_GCM_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_GCM_MODE\n");
+                break;
+            case EVP_CIPH_CCM_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_CCM_MODE\n");
+                break;
+            case EVP_CIPH_XTS_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_XTS_MODE\n");
+                break;
+            case EVP_CIPH_WRAP_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_WRAP_MODE\n");
+                break;
+            case EVP_CIPH_OCB_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_OCB_MODE\n");
+                break;
+            case EVP_CIPH_MODE:
+                printf("cipher mode:\t\tEVP_CIPH_MODE\n");
+                break;
+            defualt:
+                printf("cipher mode:\t\tunknow\n");
+                break;
+        }
+    }
+
+    int evp_encrypt_update(const unsigned char *in, int inlen, unsigned char *out, int *outlen)
+    {
+        int ret = 0;
+        ret = EVP_EncryptUpdate(en_ctx, out, outlen, in, inlen);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp encrypt update fail: %s\n", err_string);
+        }
+        return ret;
+    }
+
+    int evp_encrypt_final(unsigned char* out, int* outlen)
+    {
+        int ret = 0;
+        ret = EVP_EncryptFinal_ex(en_ctx, out, outlen);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp encrypt final fail: %s\n", err_string);
+        }
+        return ret;
+    }
+
+    int evp_decrypt_update(const unsigned char *in, int inlen, unsigned char *out, int *outlen)
+    {
+        int ret = 0;
+        ret = EVP_DecryptUpdate(de_ctx, out, outlen, in, inlen);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp encrypt update fail: %s\n", err_string);
+        }
+        return ret;
+    }
+
+
+    int evp_decrypt_final(unsigned char* out, int* outlen)
+    {
+        int ret = 0;
+        ret = EVP_DecryptFinal_ex(de_ctx, out, outlen);
+        if(!ret)
+        {
+            ERR_error_string(ERR_get_error(), err_string);
+            printf("evp decrypt final fail: %s\n", err_string);
+        }
+        return ret;
+    }
+
+    ~evp_crypto()
+    {
+        EVP_CIPHER_CTX_free(en_ctx);
+        EVP_CIPHER_CTX_free(de_ctx);
+        EVP_cleanup();
+    }
+};
+
+
+void crypto()
+{
+    unsigned char key[EVP_MAX_KEY_LENGTH] = {0};
+    unsigned char iv[EVP_MAX_IV_LENGTH] = {0};
+    unsigned char* in = "1111111111111111111111111111111111111111111111111111111111111111111111111111111";
+    int inlen = strlen(in);
+    unsigned char out[inlen + EVP_MAX_BLOCK_LENGTH] = {0};
+    int outlen = sizeof(out);
+    unsigned char d[inlen] = {0};
+    unsigned int dlen = sizeof(d);
+
+    char* passwd = "11111111";
+    int count = 3; //count is the iteration count to use
+
+    unsigned char* tmp = out;
+    int datalen = 0;
+
+    const EVP_CIPHER* cipher = EVP_aes_256_ofb();
+    //从输入密码产生了密钥key和初始化向量iv
+    EVP_BytesToKey(cipher, EVP_md5(), NULL, passwd, strlen(passwd), count, key, iv);
+
+    evp_crypto* crypto = new evp_crypto(cipher, key, iv);
+    crypto->evp_crypto_info();
+    crypto->evp_encrypt_update(in, inlen, tmp, &outlen);
+    datalen += outlen;
+    crypto->evp_encrypt_final(tmp+outlen, &outlen);
+    datalen += outlen;
+    print_bin("enc data", out, datalen);
+    printf("-------------------------------------------------------\n");
+
+    tmp = d;
+    crypto->evp_decrypt_update(out, datalen, d, &dlen);
+    tmp += dlen;
+    dlen = sizeof(d) - dlen;
+    crypto->evp_decrypt_final(tmp, &dlen);
+    tmp += dlen;
+    dlen = tmp - d;
+    printf("dec data len: %d\n", dlen);
+    printf("dec data:");
+    for(int i = 0; i < dlen; i++)
+    {
+        printf("%c", d[i]);
+    }
+    printf("\n");
+
+
+    
+
+}
+
 
 int main(int argc, char const *argv[])
 {
     //digest();
     printf("====================================================\n");
-    cipher();
+    //cipher();
+    printf("====================================================\n");
+    crypto();
+
     return 0;
 }
