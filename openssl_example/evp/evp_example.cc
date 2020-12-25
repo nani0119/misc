@@ -955,8 +955,10 @@ private:
 public:
     evp_seal(const EVP_CIPHER *t,unsigned char **ek, int *ekl, unsigned char *iv, EVP_PKEY **pubk, int npubk):type(t)
     {
+        ERR_load_EVP_strings();
+        EVP_add_cipher(t);
         ctx = EVP_CIPHER_CTX_new();
-        printf("xxxxxxx\n");
+        EVP_CIPHER_CTX_init(ctx);
         EVP_SealInit(ctx, type, ek, ekl, iv, pubk, npubk);
     }
 
@@ -973,6 +975,7 @@ public:
     ~evp_seal()
     {
         EVP_CIPHER_CTX_free(ctx);
+        EVP_cleanup();
     }
 };
 
@@ -984,7 +987,10 @@ private:
 public:
     evp_open(const EVP_CIPHER *t,unsigned char *ek, int ekl, unsigned char *iv, EVP_PKEY* prik):type(t)
     {
+        ERR_load_EVP_strings();
+        EVP_add_cipher(t);
         ctx = EVP_CIPHER_CTX_new();
+        EVP_CIPHER_CTX_init(ctx);
         EVP_OpenInit(ctx,type,ek,ekl,iv,prik);
     }
 
@@ -1001,6 +1007,7 @@ public:
     ~evp_open()
     {
         EVP_CIPHER_CTX_free(ctx);
+        EVP_cleanup();
     }
 };
 
@@ -1012,7 +1019,8 @@ void seal()
     RSA* rsaPrivate;
     EVP_PKEY* pub;
     EVP_PKEY* pri;
-    const EVP_CIPHER* cipher = EVP_des_cbc();
+    char *iv;
+    const EVP_CIPHER* cipher = EVP_aes_256_ofb();
     char* in = "hello world";
     size_t inlen = strlen(in);
 
@@ -1032,17 +1040,12 @@ void seal()
    // 写信
     int ekl = EVP_PKEY_size(pub);
     char* ek = (char*) OPENSSL_zalloc(sizeof(char)*ekl);
-
     int ekcnt = 1;
-    EVP_PKEY* pubarray[1];
-    pubarray[0] = pub;
 
-    char* ekarray[1];
-    ekarray[0] = ek;
+    int ivlen = EVP_CIPHER_iv_length(cipher);
+    iv = (char*)OPENSSL_zalloc(sizeof(char)*ivlen);
+    evp_seal* s = new evp_seal(cipher, &ek, &ekcnt, iv, &pub, 1);
 
-    evp_seal* s = new evp_seal(cipher, ekarray, &ekcnt, NULL, pubarray, 1);
-
-    printf("111111\n");
     unsigned char out[1024] = {0};
     int outlen = 1024;
     unsigned char* tmp = out;
@@ -1053,6 +1056,7 @@ void seal()
     outlen = 1024- outlen;
     s->evp_seal_final(tmp, &outlen);
     total+=outlen;
+    print_bin("seal data", out, total);
 
     //==========================================================
     // 拆信
@@ -1060,40 +1064,106 @@ void seal()
     int dlen = 1024;
     unsigned char* dtmp = d;
 
-    evp_open *o = new evp_open(cipher,ek, ekl, NULL, pri);
+    evp_open *o = new evp_open(cipher,ek, ekl, iv, pri);
     o->evp_open_update(out, total, dtmp, &dlen);
     dtmp += dlen;
+    dlen = 1024 - dlen;
     o->evp_seal_final(dtmp, &dlen);
 
     printf("%s\n", d);
 
     OPENSSL_free(ek);
+    OPENSSL_free(iv);
     delete s;
     delete o;
 }
 
+
+void evp_bio()
+{
+    char* in = "hello world";
+    int inlen = strlen(in);
+    const EVP_CIPHER* cipher = EVP_des_cbc();
+    BIO* bioout = BIO_new_fp(stdout, BIO_NOCLOSE);
+    BIO* mem = BIO_new(BIO_s_mem());
+    BIO* base64 = BIO_new(BIO_f_base64());
+    BIO* bioen = BIO_new(BIO_f_cipher());
+    char out[128] = {0};
+    int outlen = 128;
+
+    const unsigned char* data = "password";
+    int ivlen = EVP_CIPHER_iv_length(cipher);
+    unsigned char* iv = (unsigned char*) OPENSSL_zalloc(sizeof(char)* ivlen);
+    int keylen = EVP_CIPHER_key_length(cipher);
+    unsigned char* key = (unsigned char*) OPENSSL_zalloc(sizeof(char)* keylen);
+    EVP_BytesToKey(cipher, EVP_md5(), NULL, data, strlen(data), 3, key, iv);
+
+    BIO_set_cipher(bioen, cipher, key, iv, 1);
+
+    BIO_push(bioen, base64);
+    BIO_push(base64, mem);
+
+    BIO_write(bioen, in, inlen);
+    BIO_flush(bioen);
+
+//==============================================
+    int len = BIO_read(mem, out, outlen);
+    BIO_write(bioout, out, len);
+    BIO_flush(bioout);
+//===================================================
+    
+    BIO_write(mem, out, len);
+    memset(out, 0, 128);
+    BIO* biode = BIO_new(BIO_f_cipher());
+    BIO_set_cipher(biode, cipher, key, iv, 0);
+    BIO_push(biode, base64);
+    BIO_read(biode, out, outlen);
+    printf("%s\n", out);
+
+//==========================================================
+
+    BIO* biomd = BIO_new(BIO_f_md());
+    BIO_set_md(biomd, EVP_md5());
+
+    BIO_pop(base64);
+    BIO_push(biomd, base64);
+    BIO_push(base64, bioout);
+    BIO_write(biomd, in, inlen);
+    BIO_flush(biomd);
+
+    OPENSSL_free(iv);
+    OPENSSL_free(key);
+    BIO_free(biomd);
+    BIO_free(biode);
+    BIO_free(bioen);
+    BIO_free(bioout);
+
+}
 
 
 int main(int argc, char const *argv[])
 {
     printf("====================================================\n");
     // 摘要
-    //digest();
+    digest();
     printf("====================================================\n");
     // 对称解密
-    //cipher();
+    cipher();
     // 对称加解密
-    //crypto();
+    crypto();
     // 非对称加解密
-    //pkey();
+    pkey();
     // 基于密码的加解密
-    // pbe();
+    pbe();
     printf("====================================================\n");
     // 验签
-    //sign_verify();
+    sign_verify();
     printf("====================================================\n");
     //　电子信封
     seal();
+    printf("====================================================\n");
+    // 编解码
+    evp_bio();
 
     return 0;
 }
