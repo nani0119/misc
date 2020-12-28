@@ -69,6 +69,7 @@ add_subdirectory(rsa)
 add_subdirectory(dsa)
 add_subdirectory(dh)
 add_subdirectory(evp)
+add_subdirectory(pem)
 # =============================================================
 
 #指定安装时使用的路径前缀
