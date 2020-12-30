@@ -71,6 +71,7 @@ add_subdirectory(dh)
 add_subdirectory(evp)
 add_subdirectory(pem)
 add_subdirectory(engine)
+add_subdirectory(x509)
 # =============================================================
 
 #指定安装时使用的路径前缀
