@@ -73,6 +73,8 @@ add_subdirectory(pem)
 add_subdirectory(engine)
 add_subdirectory(x509)
 add_subdirectory(x509_req)
+add_subdirectory(ocsp)
+add_subdirectory(crl)
 # =============================================================
 
 #指定安装时使用的路径前缀
