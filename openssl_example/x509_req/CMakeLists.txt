@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(MODULE_NAME x509)
+set(MODULE_NAME x509_req)
 
 find_package(OpenSSL REQUIRED)
 
@@ -14,16 +14,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # ======================================================
 # 自动包含当前目录代码文件
 # aux_source_directory(. DIR_SRCS)
-set(x509_example_file "x509_example.cc")
+set(x509_req_example_file "x509_req_example.cc")
 
 # 生成可执行文件
-add_executable(x509_example ${x509_example_file})
+add_executable(x509_req_example ${x509_req_example_file})
 
 # 添加可执行文件使用的链接库
-target_link_libraries(x509_example ${EXTRA_LIBS})
+target_link_libraries(x509_req_example ${EXTRA_LIBS})
 
 # 指定安装的文件信息
-install(TARGETS x509_example DESTINATION bin)
+install(TARGETS x509_req_example DESTINATION bin)
 #install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/Demo.h" DESTINATION include)
 
 
