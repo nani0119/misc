@@ -407,9 +407,105 @@ void x509_general_name()
 
 }
 
+void x509_store()
+{
+    printf("===================================%s====================================\n",__func__);
+    X509 *x;
+    x=X509_new();
+
+    // version
+    X509_set_version(x,0x02);
+
+    // SN
+    ASN1_INTEGER *sn = ASN1_INTEGER_new();
+    ASN1_INTEGER_set_uint64(sn, 1234567890);
+    X509_set_serialNumber(x, sn);
+
+    //signature algorithm
+    
+
+    //issuer
+    X509_NAME* name = X509_NAME_new();
+    X509_NAME_add_entry_by_NID(name, NID_commonName, V_ASN1_UTF8STRING, "Root Agencys", -1 , -1, 0);
+    X509_set_issuer_name(x,name);
+
+    //Time
+    X509_gmtime_adj(X509_getm_notBefore(x), 0);
+    X509_gmtime_adj(X509_getm_notAfter (x), 60*60*24*365);
+
+    // subject
+    X509_set_subject_name(x, name);
+
+    // public key
+    RSA* rsa=RSA_generate_key(1024, RSA_3, NULL, NULL);
+    EVP_PKEY* pkey = EVP_PKEY_new();
+    EVP_PKEY_assign_RSA(pkey, rsa);
+    X509_set_pubkey(x,pkey);
+
+    // ext
+    STACK_OF(X509_EXTENSION) *exts = NULL;
+    PKEY_USAGE_PERIOD *period;
+    time_t t;
+    period=PKEY_USAGE_PERIOD_new();
+    t=1;
+    period->notBefore=ASN1_GENERALIZEDTIME_set(period->notBefore,t);
+    t=100;
+    period->notAfter=ASN1_GENERALIZEDTIME_set(period->notAfter,t);
+    X509V3_add1_i2d(&exts, NID_private_key_usage_period, period, 1, X509V3_ADD_DEFAULT);
+
+    int len = sk_X509_EXTENSION_num(exts);
+    for(int i = 0; i < len; i++)
+    {
+        X509_EXTENSION* ext = sk_X509_EXTENSION_value(exts, i);
+        X509_add_ext(x, ext, -1);
+    }
+
+    // signature
+    X509_sign(x, pkey, EVP_md5());
+
+    BIO* out = BIO_new_fp(stdout, BIO_NOCLOSE);
+    X509_print(out, x);
+    BIO_free(out);
+
+    BIO* file = BIO_new_file("x509.pem", "w");
+    PEM_write_bio_X509(file, x);
+    BIO_free(file);
+
+    sk_X509_EXTENSION_pop_free(exts,X509_EXTENSION_free);
+    EVP_PKEY_free(pkey);
+    X509_NAME_free(name);
+    ASN1_INTEGER_free(sn);
+    X509_free(x);
+}
+
+void x509_load()
+{
+    printf("===================================%s====================================\n",__func__);
+    X509 *x;
+    
+    BIO* file = BIO_new_file("x509.pem", "r");
+    x = PEM_read_bio_X509(file, NULL, NULL, NULL);
+    BIO_free(file);
+
+    BIO* out = BIO_new_fp(stdout, BIO_NOCLOSE);
+    X509_print(out, x);
+    BIO_free(out);
+
+    
+    int ret =  X509_check_purpose(x, X509_PURPOSE_OCSP_HELPER, 1);
+    if (ret == 1)
+    {
+        printf("X509_PURPOSE_OCSP_HELPER purpose check ok!\n");
+    }
+    else
+    {
+        printf("X509_PURPOSE_OCSP_HELPER purpose check failed!\n");
+    }
+}
 
 int main(int argc, char const *argv[])
 {
+#if 0
     x509_alg();
     int len = store_SEQ_X509();
     printf("len:%d\n", len);
@@ -422,5 +518,8 @@ int main(int argc, char const *argv[])
     x509_v3_ext();
     x509_attr();
     x509_general_name();
+#endif
+    x509_store();
+    x509_load();
     return 0;
 }
