@@ -76,6 +76,7 @@ add_subdirectory(x509_req)
 add_subdirectory(ocsp)
 add_subdirectory(crl)
 add_subdirectory(pkcs7)
+add_subdirectory(pkcs12)
 # =============================================================
 
 #指定安装时使用的路径前缀
