@@ -200,7 +200,8 @@ int ssl_http(int argc, char const *argv[])
         printf("ssl_http_example www.aaa.com 443 / 1 for ssl\n");
         err_quit("paramter error!");
     }
-    
+
+#if 0
     // url to ip
     if((hptr = gethostbyname(host)) == NULL)
     {
@@ -209,6 +210,7 @@ int ssl_http(int argc, char const *argv[])
     
     host = inet_ntop(hptr->h_addrtype, hptr->h_addr_list[0], str, sizeof(str));
     printf("server ip addr:%s:%d\n",host, port);
+#endif
 
     /* make connection to the cache server */
     fd = create_tcpsocket(host, port);
